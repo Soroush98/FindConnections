@@ -7,7 +7,7 @@ FindConnections enables users to discover connections between notable individual
 
 Here is how the famous comedy actor Steve Carell is connected to Travis Scott, a rapper. Steve Carell appeared in a picture with Timothée Chalamet. Timothée Chalamet appeared in a picture with Kylie Jenner, and finally, Kylie Jenner has a picture with Travis Scott. It's funny to see how people from different worlds can be connected with just a few connections!
 
-![alt text](Example.png)
+<img src="Example.png" alt="Example" width="200"/>
 
 ### User Actions
 1. **Unregistered Users**:
