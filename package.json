@@ -19,6 +19,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@mui/material": "^6.4.3",
+    "@vercel/analytics": "^1.5.0",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^5.1.1",
     "formidable": "^3.5.2",
