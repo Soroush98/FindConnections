@@ -71,11 +71,10 @@ The website (frontend and backend) is deployed on the Vercel platform. Vercel co
 FindConnections implements several security features to ensure the safety and privacy of its users:
 
 1. **Authentication and Authorization**:
-    - Secure user authentication using JWT (JSON Web Tokens).
     - Role-based access control to restrict access to certain features based on user roles.
-    - When using the API, the authorization header should include the token provided by the server. This ensures that only users with the appropriate roles can access specific APIs.
-    - The token is stored as an HTTP-only cookie to prevent client-side access and reduce the risk of XSS attacks.
-
+    - When using the API, the authorization header should include the JWT (JSON Web Token)
+      provided by the server. This ensures that only users with the appropriate roles can access specific APIs.
+    - The JWT is stored as an HTTP-only cookie to prevent client-side access and reduce the risk of XSS attacks.
 2. **Data Encryption**:
     - All sensitive data, such as passwords, are encrypted using industry-standard algorithms before being stored in the database.
     - Passwords are hashed using bcrypt to ensure they are stored securely.
