@@ -5,11 +5,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Project Idea
 FindConnections enables users to discover connections between notable individuals by identifying instances where they have been photographed together, either directly or through a short chain of others who share photos. This feature offers a unique perspective on the interconnectedness of public figures. Our platform is inspired by the concept of [six degrees of separation](https://en.wikipedia.org/wiki/Six_degrees_of_separation).
 
-### How It Works
+### User Actions
+1. **Unregistered Users**:
+    - Anyone can enter two people's full names on the first page and click "Find Connections" to see their corresponding connection.
 
-1. **User Registration**: Users register on the platform by providing their basic information.
-2. **User Profile**: After logging in, users can access their profile page where they can view and update their personal information.
-3. **Photo Uploads**: Users can upload up to 10 pictures daily according to the upload guidelines. Each upload request will be reviewed by an admin, and if approved, new connections will be added to the website.
+2. **Registered Users**:
+    - **User Registration**: Users register on the platform by providing their basic information.
+    - **User Profile**: After logging in, users can access their profile page where they can view and update their personal information.
+    - **Photo Uploads**: Users can upload up to 10 pictures daily according to the upload guidelines. Each upload request will be reviewed by an admin, and if approved, new connections will be added to the website.
 
 ## Website
 
@@ -53,9 +56,11 @@ Deploy the FindConnections platform by following these steps:
 
     * Note that only people who have access to the `/api` folder and environment variables can use and test the backend. 
 
-## Development
+## Architecture
 
-If you want to contribute to the project frontend or backend, please contact me at esmailian98@gmail.com.
+![alt text](Architecture.png)
+
+The website (frontend and backend) is deployed on the Vercel platform. Vercel connects with a DynamoDB database for user and admin information and authentication. Vercel retrieves connections between two selected individuals from an EC2 instance running a Neo4j database. Each connection includes an image URL stored in this database. Based on this URL, Vercel fetches the images from an Amazon S3 instance to display to the user.
 
 ## Security Features
 
@@ -86,5 +91,6 @@ FindConnections implements several security features to ensure the safety and pr
 7. **IP Lockouts**:
     - If an IP address attempts multiple failed logins within a short timeframe, it will be temporarily banned to prevent brute-force attacks.
 
+## Development
 
-
+If you want to contribute to the project frontend or backend, please contact me at esmailian98@gmail.com.
