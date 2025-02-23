@@ -1,0 +1,181 @@
+/* stylelint-disable at-rule-no-unknown */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.image-container {
+  @apply absolute  transition-transform ease-in-out duration-300 origin-bottom ;
+
+  width: 200px;
+  height: 200px;
+  @media (max-width: 1024px) {
+    width: 200px;
+    height: 200px;
+  }
+
+  @media (max-width: 768px) {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+.image-wrapper {
+  @apply relative flex justify-center items-center;
+   /* Adjust the height as needed */
+}
+
+.bar {
+  @apply w-full h-1 bg-gray-300 mt-4 relative;
+}
+
+.bar-indicator {
+  @apply absolute h-1 bg-blue-500;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 14px; 
+  background: #ccc; 
+  border-radius: 7px;
+}
+
+/* Webkit Track */
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 14px;
+  background: #ccc;
+  border-radius: 7px;
+}
+
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  border: none;
+  width: 20px;
+  height: 14px; 
+  background: #8a9cb0; 
+  margin-top: 0; 
+  border-radius: 7px;
+}
+
+/* For Firefox Track */
+input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 14px;
+  background: #ccc;
+  border-radius: 7px;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 14px;
+  background: #8a9cb0;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1rem;
+  font-family: sans-serif;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dropzone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: border-color 0.3s;
+  cursor: pointer;
+}
+
+.dropzone p {
+  margin: 0;
+}
+
+.active {
+  border-color: #000;
+}
+
+.browseFiles {
+  color: #0070f3;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-rotate-negative3 {
+  transform: rotate(-3deg);
+  transform-origin: bottom right;
+}
+
+.card-rotate-negative6 {
+  transform: rotate(-6deg);
+  transform-origin: bottom right;
+}
+
+.card-rotate3 {
+  transform: rotate(3deg);
+  transform-origin: bottom left;
+}
+
+.card-rotate6 {
+  transform: rotate(6deg);
+  transform-origin: bottom left;
+}
+
+@keyframes dotPulse {
+  0% {
+    transform: translateX(0);
+    background-color: rgb(144, 124, 223);
+  }
+  50% {
+    transform: translateX(10px);
+    background-color: rgb(121, 104, 190);
+  }
+  100% {
+    transform: translateX(0);
+    background-color: rgb(74, 56, 147);
+  }
+}
+
+.dot-animation {
+  animation: dotPulse 1.5s infinite;
+}
+
+
