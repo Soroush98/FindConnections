@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import AWS from "aws-sdk";
+import AWS, { Token } from "aws-sdk";
 import { awsConfig } from "@/config";
 import { UserInfo } from "@/types/UserInfo";
 import Switch from "@mui/material/Switch";
@@ -62,7 +62,7 @@ export default function ProfilePage() {
         const data = await res.json();
         console.log("Fetched user data:", data); // Debug log
         if (!data.isConfirmed) {
-          router.push(`/register-success?email=${data.Email}`);
+          router.push(`/register-success?token=${token}`);
           return;
         }
 

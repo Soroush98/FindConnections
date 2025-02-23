@@ -8,7 +8,6 @@ function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
 
   useEffect(() => {
