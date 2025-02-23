@@ -92,7 +92,7 @@ export default function ProfilePage() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ userId, uploadCount, lastUploadDate }),
+      body: JSON.stringify({ uploadCount, lastUploadDate }),
     });
   };
 
@@ -111,7 +111,7 @@ export default function ProfilePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ id: userInfo.Id, currentPassword, newPassword }),
+        body: JSON.stringify({ currentPassword, newPassword }),
       });
       if (res.ok) {
         setChangePasswordMessageColor("green-500");
@@ -147,11 +147,7 @@ export default function ProfilePage() {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     const today = new Date().toISOString().split("T")[0];
-    const currentUploadCount = userInfo.uploadCount || 0;
-    if (userInfo.lastUploadDate === today && currentUploadCount <= 0) {
-      setUploadMessage("You have reached the daily upload limit.");
-      return;
-    }
+    
 
     if (!selectedFile) {
       setUploadMessage("Please select a file to upload.");
@@ -187,7 +183,22 @@ export default function ProfilePage() {
       const data = await res.json();
 
       if (res.ok) {
-        setUploadMessage("File uploaded successfully!");
+       
+       
+        const updatedUserInfoRes = await fetch("/api/users/user", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (updatedUserInfoRes.ok) {
+          const updatedUserInfo = await updatedUserInfoRes.json();
+          setUserInfo(updatedUserInfo);
+        }
+        const currentUploadCount = userInfo.uploadCount || 0;
+        if (userInfo.lastUploadDate === today && currentUploadCount <= 0) {
+          setUploadMessage("You have reached the daily upload limit.");
+          return;
+        }
         const newUploadCount = currentUploadCount - 1;
         setUserInfo((prev) => ({
           ...prev,
@@ -195,6 +206,7 @@ export default function ProfilePage() {
           lastUploadDate: today,
         }));
         await updateUserUploadCount(userInfo.Id, newUploadCount, today); // Update the upload count in the database
+        setUploadMessage("File uploaded successfully!");
       } else {
         setUploadMessage(data.message || "Failed to upload file. Please try again.");
       }

@@ -7,13 +7,12 @@ function RegisterSuccessPage() {
   const searchParams = useSearchParams();
   const [countdown, setCountdown] = useState(0);
   const [message, setMessage] = useState("");
-  const [email, setEmail] = useState("");
-
+  const [token, setToken] = useState("");
   useEffect(() => {
     if (searchParams) {
-      const emailParam = searchParams.get("email");
-      if (emailParam) {
-        setEmail(emailParam);
+      const tokenParam = searchParams.get("token");
+      if (tokenParam) {
+        setToken(tokenParam);
       } else {
         router.push("/");
       }
@@ -43,7 +42,7 @@ function RegisterSuccessPage() {
       const res = await fetch("/api/users/send-confirmation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Email: email }),
+        body: JSON.stringify({ token: token }),
       });
       const data = await res.json();
 

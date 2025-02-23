@@ -13,10 +13,8 @@ function ResetPasswordPage() {
 
   useEffect(() => {
     if (searchParams) {
-      const emailParam = searchParams.get("email");
       const tokenParam = searchParams.get("token");
-      if (emailParam && tokenParam) {
-        setEmail(emailParam);
+      if (tokenParam) {
         setToken(tokenParam);
       } else {
         setMessage("Invalid or missing token.");
@@ -39,7 +37,7 @@ function ResetPasswordPage() {
       const res = await fetch("/api/users/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, newPassword, token }),
+        body: JSON.stringify({ newPassword, token }),
       });
       const data = await res.json();
 

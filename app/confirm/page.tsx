@@ -7,14 +7,11 @@ function ConfirmPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("");
-  const [email, setEmail] = useState("");
 
   useEffect(() => {
     if (searchParams) {
-      const emailParam = searchParams.get("email");
       const tokenParam = searchParams.get("token");
-      if (emailParam && tokenParam) {
-        setEmail(emailParam);
+      if (tokenParam) {
         confirmEmail(tokenParam);
       } else {
         setMessage("Invalid or expired token.");
@@ -44,12 +41,12 @@ function ConfirmPage() {
     }
   };
 
-  const resendConfirmationEmail = async () => {
+  const resendConfirmationEmail = async (token: string) => {
     try {
       const res = await fetch("/api/users/send-confirmation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Email: email }),
+        body: JSON.stringify({ token }),
       });
       const data = await res.json();
 
@@ -70,7 +67,13 @@ function ConfirmPage() {
         <p className="mb-4">{message}</p>
         {message.includes("expired") && (
           <button
-            onClick={resendConfirmationEmail}
+            onClick={() => {
+              if (searchParams) {
+                resendConfirmationEmail(searchParams.get("token") || "");
+              } else {
+                setMessage("Invalid or expired token.");
+              }
+            }}
             className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
           >
             Resend Confirmation Email

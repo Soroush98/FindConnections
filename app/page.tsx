@@ -244,7 +244,7 @@ export default function HomePage() {
       if (res.ok) {
         setRegisterMessage("Registration successful! Please check your email to confirm your account.");
         setShowMembershipModal(false);
-        router.push('/register-success'); // Redirect to welcome page after successful registration
+        router.push(`/register-success?token=${data.token}`); // Redirect to register success page after successful registration
       } else if (data.message && data.message.includes("Email already exists")) {
         setRegisterMessage("Email already exists. Please use a different email.");
       } else {
