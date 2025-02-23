@@ -3,9 +3,7 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Project Idea
-FindConnections enables users to discover connections between notable individuals by identifying instances where they have been photographed together, such as during public events. This feature offers a unique perspective on the interconnectedness of public figures. Our platform is inspired by the concept of [six degrees of separation](https://en.wikipedia.org/wiki/Six_degrees_of_separation). In this context, a connection between two people is established if they appear together in the same photograph, either directly or through a short chain of others who share photos.
-
-
+FindConnections enables users to discover connections between notable individuals by identifying instances where they have been photographed together, either directly or through a short chain of others who share photos. This feature offers a unique perspective on the interconnectedness of public figures. Our platform is inspired by the concept of [six degrees of separation](https://en.wikipedia.org/wiki/Six_degrees_of_separation).
 
 ### How It Works
 
@@ -19,7 +17,7 @@ Visit our website at [findconnections.net](https://findconnections.net).
 
 ## Deployment
 
-To deploy the FindConnections platform, follow these steps:
+Deploy the FindConnections platform by following these steps:
 
 1. **Clone the repository**:
     ```sh
@@ -32,15 +30,8 @@ To deploy the FindConnections platform, follow these steps:
     npm install
     ```
 
-3. **Set up environment variables**:
-    Create a `.env` file in the root directory and add the necessary environment variables. For example:
-    ```env
-    DATABASE_URL=your_database_url
-    SECRET_KEY=your_secret_key
-    ```
-    * Note that only people who have access to the `/api` folder and environment variables can develop the backend. By default, only the frontend is accessible for development.
+3. **Run the application**:
 
-4. **Run the application**:
     Run the development server:
 
     ```bash
@@ -59,6 +50,12 @@ To deploy the FindConnections platform, follow these steps:
 
 5. **Access the application**:
     Open your web browser and navigate to `http://localhost:3000`.
+
+    * Note that only people who have access to the `/api` folder and environment variables can use and test the backend. 
+
+## Development
+
+If you want to contribute to the project frontend or backend, please contact me at esmailian98@gmail.com.
 
 ## Security Features
 
