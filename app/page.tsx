@@ -150,9 +150,6 @@ export default function HomePage() {
     }
   };
 
- 
-
-  
   const maxIndex =
     connections.length > 0 ? connections[0].segments.length - 1 : 0;
 
