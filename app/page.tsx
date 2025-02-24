@@ -103,10 +103,11 @@ export default function HomePage() {
     setConnectionError("");
 
     setIsTransitioning(true);
-    const response = await fetch("/api/general/connections", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name1, name2 }),
+    const response = await fetch(`/api/general/connections?name1=${encodeURIComponent(name1)}&name2=${encodeURIComponent(name2)}`, {
+      method: 'GET',
+      headers: {
+      'Content-Type': 'application/json',
+      },
     });
     const fetchedConnections = await response.json();
     setConnections(fetchedConnections);

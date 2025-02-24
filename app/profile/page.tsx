@@ -45,7 +45,6 @@ export default function ProfilePage() {
 
       try {
         setIsLoading(true);
-        console.log("All Cookies:", Cookies.get());
         const token = Cookies.get("auth-token");
         if (!token) {
           router.push("/");
@@ -60,7 +59,6 @@ export default function ProfilePage() {
           throw new Error(`Failed to fetch user info: ${res.statusText}`);
         }
         const data = await res.json();
-        console.log("Fetched user data:", data); // Debug log
         if (!data.isConfirmed) {
           router.push(`/register-success?token=${token}`);
           return;
