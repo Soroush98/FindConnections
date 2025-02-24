@@ -1,11 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from 'js-cookie';
+
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDonate } from '@fortawesome/free-solid-svg-icons';
 import PersonSelector from "../components/PersonSelector"
+import LoginForm from '../components/LoginForm';
+import RegisterForm from '../components/RegisterForm';
 
 export default function HomePage() {
   const [name1, setName1] = useState("");
@@ -19,15 +21,6 @@ export default function HomePage() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [hoveredSegment, setHoveredSegment] = useState<Segment | null>(null);
   const [sliderValue, setSliderValue] = useState(0);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginMessage, setLoginMessage] = useState("");
-  const [registerName, setRegisterName] = useState("");
-  const [registerFamilyName, setRegisterFamilyName] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState("");
-  const [registerMessage, setRegisterMessage] = useState("");
   const [showMainPics, setShowMainPics] = useState(true);
   const [mainPics, setMainPics] = useState<string[]>([]);
   const [suggestions1, setSuggestions1] = useState<string[]>([]);
@@ -40,21 +33,6 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const handleTriggerLogin = () => {
-      const loginButton = document.getElementById("login-button");
-      if (loginButton) {
-        loginButton.click(); // Simulate a click on the login button
-      }
-    };
-
-    window.addEventListener("triggerLogin", handleTriggerLogin);
-
-    return () => {
-      window.removeEventListener("triggerLogin", handleTriggerLogin);
-    };
-  }, []);
 
   // Set two random main pictures
   useEffect(() => {
@@ -171,90 +149,9 @@ export default function HomePage() {
     }
   };
 
-  const handleLoginInline = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch("/api/users/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Email: loginEmail, Password: loginPassword }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setLoginMessage("Login successful!");
-        Cookies.set('auth-token', data.token, { path: '/', expires: 1 });
-        router.push('/profile'); // Redirect to profile page
-      } else {
-        // Prefer error field, otherwise use message field
-        setLoginMessage(data.error || data.message || "Login failed. Please try again.");
-      }
-    } catch {
-      setLoginMessage("An error occurred. Please try again.");
-    }
-  };
+ 
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch("/api/users/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Email: loginEmail }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setLoginMessage("Password reset link sent to your email.");
-      } else {
-        setLoginMessage(data.message || "Failed to send password reset link. Please try again.");
-      }
-    } catch {
-      setLoginMessage("An error occurred. Please try again.");
-    }
-  };
-
-  function isStrongPassword(pass: string) {
-    // Basic example: length >= 8, at least one uppercase, one lowercase, one digit
-    const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    return pattern.test(pass);
-  }
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (registerPassword !== registerPasswordConfirm) {
-      setRegisterMessage("Passwords do not match.");
-      return;
-    }
-    if (!isStrongPassword(registerPassword)) {
-      setRegisterMessage("Password is too weak. Requires uppercase, lowercase, digit, and length ≥ 8.");
-      return;
-    }
-    try {
-      const res = await fetch("/api/users/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          Name: registerName,
-          FamilyName: registerFamilyName,
-          Email: registerEmail,
-          Password: registerPassword,
-        }),
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        setRegisterMessage("Registration successful! Please check your email to confirm your account.");
-        setShowMembershipModal(false);
-        router.push(`/register-success?token=${data.token}`); // Redirect to register success page after successful registration
-      } else if (data.message && data.message.includes("Email already exists")) {
-        setRegisterMessage("Email already exists. Please use a different email.");
-      } else {
-        setRegisterMessage(data.message || "Registration failed. Please try again.");
-      }
-    } catch{
-      setRegisterMessage("An error occurred. Please try again.");
-    }
-  };
-
+  
   const maxIndex =
     connections.length > 0 ? connections[0].segments.length - 1 : 0;
 
@@ -411,109 +308,13 @@ export default function HomePage() {
               {activeTab === "login" && (
                 <>
                   <h1 className="text-2xl font-bold mb-4">Login</h1>
-                  <form onSubmit={handleLoginInline}>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Email</label>
-                      <input
-                        type="email"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        required
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Password</label>
-                      <input
-                        type="password"
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        required
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
-                    >
-                      Login
-                    </button>
-                    {loginMessage && (
-                      <p className="mt-4 text-center">{loginMessage}</p>
-                    )}
-                  </form>
-                  <button
-                    onClick={handleForgotPassword}
-                    className="mt-4 text-sm text-gray-600 hover:underline block mx-auto"
-                  >
-                    Forgot Password?
-                  </button>
+                  <LoginForm />
                 </>
               )}
               {activeTab === "register" && (
                 <>
                   <h1 className="text-2xl font-bold mb-4">Register</h1>
-                  <form onSubmit={handleRegister}>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Name</label>
-                      <input
-                        type="text"
-                        value={registerName}
-                        onChange={(e) => setRegisterName(e.target.value)}
-                        required
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Family Name</label>
-                      <input
-                        type="text"
-                        value={registerFamilyName}
-                        onChange={(e) => setRegisterFamilyName(e.target.value)}
-                        required
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Email</label>
-                      <input
-                        type="email"
-                        value={registerEmail}
-                        onChange={(e) => setRegisterEmail(e.target.value)}
-                        required
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Password</label>
-                      <input
-                        type="password"
-                        value={registerPassword}
-                        onChange={(e) => setRegisterPassword(e.target.value)}
-                        required
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-                      <input
-                        type="password"
-                        value={registerPasswordConfirm}
-                        onChange={(e) => setRegisterPasswordConfirm(e.target.value)}
-                        required
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
-                    >
-                      Register
-                    </button>
-                    {registerMessage && (
-                      <p className="mt-4 text-center">{registerMessage}</p>
-                    )}
-                  </form>
+                  <RegisterForm />
                 </>
               )}
               <button

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import AWS, { Token } from "aws-sdk";
+import AWS from "aws-sdk";
 import { awsConfig } from "@/config";
 import { UserInfo } from "@/types/UserInfo";
 import Switch from "@mui/material/Switch";
