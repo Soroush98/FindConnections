@@ -96,4 +96,4 @@ FindConnections implements several security features to ensure the safety and pr
 
 ## Development
 
-If you want to contribute to the project frontend or backend, please contact me at esmailian98@gmail.com.
+If you want to contribute to the project frontend or backend, please contact me at soroosh.esmaeilian@gmail.com.
