@@ -16,11 +16,11 @@ const LoginForm: React.FC = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ Email: email, Password: password }),
+        credentials: 'include',
       });
       const data = await res.json();
       if (res.ok) {
         setMessage("Login successful!");
-        Cookies.set('auth-token', data.token, { path: '/', expires: 1 });
         router.push('/profile'); // Redirect to profile page
       } else {
         // Prefer error field, otherwise use message field

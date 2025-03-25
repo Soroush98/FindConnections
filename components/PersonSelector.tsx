@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-
+import Image from 'next/image';
 type PersonSelectorProps = {
   picUrl?: string;
   inputValue: string;
@@ -38,7 +38,9 @@ export default function PersonSelector({
         >
           {picUrl && (
             <>
-              <img
+              <Image
+                width={170}
+                height={170}
                 src={`/Famous-pics/${picUrl}`}
                 alt="Person"
                 className=" w-[170px] h-[170px] object-cover rounded-2xl relative "
