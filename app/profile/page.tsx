@@ -45,22 +45,14 @@ export default function ProfilePage() {
 
       try {
         setIsLoading(true);
-        const token = Cookies.get("auth-token");
-        if (!token) {
-          router.push("/");
-          return;
-        }
         const res = await fetch("/api/users/user", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         });
         if (!res.ok) {
           throw new Error(`Failed to fetch user info: ${res.statusText}`);
         }
         const data = await res.json();
         if (!data.isConfirmed) {
-          router.push(`/register-success?token=${token}`);
+          router.push(`/register-success?`);
           return;
         }
 
@@ -73,7 +65,6 @@ export default function ProfilePage() {
         setUserInfo(data);
         setEmailNotifications(data.notification_enabled === 1);
       } catch (error) {
-        console.error("Error loading user profile:", error);
         router.push("/");
       } finally {
         setIsLoading(false);
@@ -83,31 +74,26 @@ export default function ProfilePage() {
   }, [router]);
 
   const updateUserUploadCount = async (userId: string, uploadCount: number, lastUploadDate: string) => {
-    const token = Cookies.get("auth-token");
     await fetch("/api/users/update-upload-count", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ uploadCount, lastUploadDate }),
     });
   };
 
   const handleLogout = async () => {
-    Cookies.set("auth-token", "");
     await fetch("/api/users/logout", { method: "POST" });
     router.push("/");
   };
 
   const handleChangePassword = async () => {
     try {
-      const token = Cookies.get("auth-token");
       const res = await fetch("/api/users/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
@@ -172,9 +158,6 @@ export default function ProfilePage() {
       const token = Cookies.get('auth-token');
       const res = await fetch("/api/users/user-upload", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
         body: formData,
       });
 
@@ -184,9 +167,6 @@ export default function ProfilePage() {
        
        
         const updatedUserInfoRes = await fetch("/api/users/user", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         });
         if (updatedUserInfoRes.ok) {
           const updatedUserInfo = await updatedUserInfoRes.json();
@@ -234,7 +214,6 @@ export default function ProfilePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ enabled }),
       });

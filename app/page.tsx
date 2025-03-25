@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
+import Image from 'next/image';
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDonate } from '@fortawesome/free-solid-svg-icons';
@@ -412,7 +412,7 @@ export default function HomePage() {
                           onMouseLeave={handleMouseLeave}
                         >
                           {connection.imageUrls[idx] ? (
-                            <img
+                            <Image
                               width={300}
                               height={300}
                               src={connection.imageUrls[idx]}
