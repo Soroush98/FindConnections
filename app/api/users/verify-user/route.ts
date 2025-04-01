@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { UserInfo } from '@/types/UserInfo';
 import { cookies } from 'next/headers';
 
+
 const documentClient = new DynamoDB.DocumentClient({
   region: awsConfig.region,
   accessKeyId: awsConfig.accessKeyId,
@@ -31,7 +32,6 @@ export async function GET() {
         { status: 401 }
       );
     }
-     console.log("This is id", decoded.id);
     const params = {
       TableName: "FL_Users",
       Key: { Id: decoded.id }
@@ -46,7 +46,6 @@ export async function GET() {
         { status: 404 }
       );
     }
-
     return NextResponse.json({
       Id: user.Id,
       Name: user.Name,

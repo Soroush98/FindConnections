@@ -50,7 +50,9 @@ export default function ProfilePage() {
     const loadUserInfo = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch("/api/users/user-info", {});
+        const res = await fetch("/api/users/verify-user", {
+          credentials: "include",
+        });
         if (!res.ok) {
           throw new Error(`Failed to fetch user info: ${res.statusText}`);
         }
@@ -58,8 +60,7 @@ export default function ProfilePage() {
         if (!data.isConfirmed) {
             router.push(`/register-success?token=${data.token}`);
           return;
-        }
-
+          }
         const today = new Date().toISOString().split("T")[0];
         if (data.lastUploadDate !== today) {
           data.uploadCount = 10;
@@ -78,7 +79,8 @@ export default function ProfilePage() {
   }, [router]);
 
   const handleLogout = async () => {
-    await fetch("/api/users/logout", { method: "POST" });
+    await fetch("/api/users/logout", { method: "POST",
+      credentials: "include" });
     router.push("/");
   };
 
@@ -89,6 +91,7 @@ export default function ProfilePage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       if (res.ok) {
@@ -151,6 +154,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/users/user-upload", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
 
       const data = await res.json();
@@ -185,6 +189,7 @@ export default function ProfilePage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ enabled }),
       });
       if (!res.ok) {
