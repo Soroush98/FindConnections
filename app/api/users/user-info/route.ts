@@ -24,8 +24,14 @@ export async function GET() {
   }
 
   try {
-    const decoded = jwt.verify(token, SECRET_KEY) as { email: string, id: string };
-  
+    const decoded = jwt.verify(token, SECRET_KEY) as { email: string, id: string, role: string };
+    if (decoded.role!== 'user') {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+     console.log("This is id", decoded.id);
     const params = {
       TableName: "FL_Users",
       Key: { Id: decoded.id }

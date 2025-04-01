@@ -16,10 +16,10 @@ const ddbClient = new DynamoDBClient({
 const dynamoDb = DynamoDBDocumentClient.from(ddbClient);
 const SECRET_KEY = key.SECRET_KEY;
 
-async function updateUserUploadCount(userEmail: string, uploadCount: number, lastUploadDate: string) {
+async function updateUserUploadCount(userId: string, uploadCount: number, lastUploadDate: string) {
   await dynamoDb.send(new UpdateCommand({
     TableName: "FL_Users",
-    Key: { Id: userEmail },
+    Key: { Id: userId },
     UpdateExpression: 'set uploadCount = :uploadCount, lastUploadDate = :lastUploadDate',
     ExpressionAttributeValues: {
       ':uploadCount': uploadCount,
@@ -39,13 +39,13 @@ export async function POST(req: NextRequest) {
   if (!token) {
     return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
   }
-  let userEmail;
+  let userId;
   try {
-    const decoded = jwt.verify(token, SECRET_KEY) as { email: string, role: string };
+    const decoded = jwt.verify(token, SECRET_KEY) as { email: string, id: string, role: string };
     if (decoded.role !== 'user') { 
       return NextResponse.json({ message: 'Not authorized' }, { status: 403 });
     }
-    userEmail = decoded.email;
+    userId = decoded.id;
   } catch {
     return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
   }
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await updateUserUploadCount(userEmail, uploadCount, lastUploadDate);
+    await updateUserUploadCount(userId, uploadCount, lastUploadDate);
     return NextResponse.json({ message: 'Upload count updated successfully' }, { status: 200 });
   } catch (error) {
     console.error('Error updating upload count:', error);

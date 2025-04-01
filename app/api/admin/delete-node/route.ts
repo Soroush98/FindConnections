@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       if (decoded.role !== 'admin') {
         return NextResponse.json({ message: 'Not authorized' }, { status: 403 });
       }
-    } catch (error) {
+    } catch {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 

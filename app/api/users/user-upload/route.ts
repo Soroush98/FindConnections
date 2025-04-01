@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DynamoDBClient, GetItemCommand, UpdateItemCommand, ReturnValue } from '@aws-sdk/client-dynamodb';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { awsConfig } from '@/config';
 import { parse } from 'cookie';
 import {key} from '@/config';
@@ -23,6 +23,29 @@ const dynamoClient = new DynamoDBClient({
   },
 });
 
+// Check if file already exists with either name combination
+async function checkIfFileExists(firstPerson: string, secondPerson: string, fileExtension: string) {
+  const key1 = `${firstPerson}_${secondPerson}.${fileExtension}`;
+  const key2 = `${secondPerson}_${firstPerson}.${fileExtension}`;
+  
+  const params = {
+    Bucket: awsConfig.tempbucketName,
+    Prefix: '' // Search the entire bucket
+  };
+  
+  const response = await s3Client.send(new ListObjectsV2Command(params));
+  
+  if (response.Contents) {
+    for (const object of response.Contents) {
+      if (object.Key === key1 || object.Key === key2) {
+        return true; // File already exists
+      }
+    }
+  }
+  
+  return false; // File does not exist
+}
+
 export async function POST(req: NextRequest) {
   // Extract token from cookie or header
   let token;
@@ -36,11 +59,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
   }
 
-  let userEmail;
+  let userId;
   try {
     // Verify token and extract user ID
-    const decoded = jwt.verify(token, SECRET_KEY) as { userId: string, email: string };
-    userEmail = decoded.email;
+    const decoded = jwt.verify(token, SECRET_KEY) as { id: string, email: string, role: string };
+    if (decoded.role!=='user') {
+      return NextResponse.json({ message: 'Not authorized' }, { status: 403 }); 
+    }
+    userId = decoded.id;
   } catch {
     return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
   }
@@ -49,7 +75,7 @@ export async function POST(req: NextRequest) {
   const userParams = {
     TableName: 'FL_Users',
     Key: {
-      'Email': { S: userEmail }
+      'Id': { S: userId }
     }
   };
 
@@ -94,14 +120,24 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    // Check if the connection already exists before updating user quota
+    const fileExtension = file.name.split('.').pop();
+    const connectionExists = await checkIfFileExists(firstPersonFullName, secondPersonFullName, fileExtension!);
+    
+    if (connectionExists) {
+      return NextResponse.json({ 
+        message: 'This connection already exists in our system.' 
+      }, { status: 409 });
+    }
+
     // Use a conditional update to prevent race conditions
     const updateParams = {
       TableName: 'FL_Users',
       Key: {
-        'Email': { S: userEmail }
+        'Id': { S: userId }
       },
       UpdateExpression: 'SET uploadCount = :newCount, lastUploadDate = :date',
-      ConditionExpression: 'attribute_exists(Email) AND (uploadCount > :zero OR :today <> lastUploadDate)',
+      ConditionExpression: '(uploadCount > :zero OR :today <> lastUploadDate)',
       ExpressionAttributeValues: {
         ':newCount': { N: (newUploadCount - 1).toString() },
         ':date': { S: today },
@@ -115,7 +151,6 @@ export async function POST(req: NextRequest) {
       const { Attributes } = await dynamoClient.send(new UpdateItemCommand(updateParams));
       
       // Process file upload only after successful update of user quota
-      const fileExtension = file.name.split('.').pop();
       const key = `${firstPersonFullName}_${secondPersonFullName}.${fileExtension}`;
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
@@ -138,8 +173,8 @@ export async function POST(req: NextRequest) {
         }
       }, { status: 200 });
       
-    } catch (error: any) {
-      if (error.name === 'ConditionalCheckFailedException') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'ConditionalCheckFailedException') {
         // Another request has already used up the user's quota
         return NextResponse.json({ 
           message: 'Upload quota has changed. Please refresh and try again.' 

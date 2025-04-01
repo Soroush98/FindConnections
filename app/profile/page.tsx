@@ -68,7 +68,7 @@ export default function ProfilePage() {
 
         setUserInfo(data);
         setEmailNotifications(data.notification_enabled === 1);
-      } catch (error) {
+      } catch {
         router.push("/");
       } finally {
         setIsLoading(false);
@@ -156,13 +156,12 @@ export default function ProfilePage() {
       const data = await res.json();
 
       if (res.ok) {
-        const updatedUserInfoRes = await fetch("/api/users/user", {});
-        if (updatedUserInfoRes.ok) {
-          const updatedUserInfo = await updatedUserInfoRes.json();
-          setUserInfo(updatedUserInfo);
-        }
-
-        setUploadMessage("File uploaded successfully!");
+            setUserInfo((prev) => ({
+              ...prev,
+              uploadCount: data.user.uploadCount,
+              lastUploadDate: data.user.lastUploadDate || prev.lastUploadDate
+            }));
+        setUploadMessage(data.message);
         setSelectedFile(null);
         setFirstPersonFullName("");
         setSecondPersonFullName("");
