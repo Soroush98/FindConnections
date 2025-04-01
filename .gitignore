@@ -42,9 +42,8 @@ next-env.d.ts
 
 config.ts
 temp.js
-/app/api
 .vercel
-/app/admin-x7zeycd
+/app/admin-*
 
 
 /public/robots.txt

@@ -1,6 +1,8 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+// Import helper functions
+import { isStrongPassword } from "@/helpers/userHelpers";
 
 const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -10,11 +12,6 @@ const RegisterForm: React.FC = () => {
   const [name, setRegisterName] = useState('');
   const [familyname, setRegisterFamilyName] = useState('');
   const router = useRouter();
-
-  const isStrongPassword = (pass: string) => {
-    const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    return pattern.test(pass);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
