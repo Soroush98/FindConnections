@@ -5,13 +5,18 @@ import AWS from "aws-sdk";
 import { awsConfig } from "@/config";
 import { UserInfo } from "@/types/UserInfo";
 import Switch from "@mui/material/Switch";
-import Cookies from "js-cookie";
 import { useTheme, useMediaQuery } from "@mui/material";
+// Import helper functions
+import { validateImageFile } from "@/helpers/fileValidation";
+import { createNameChangeHandler } from "@/helpers/nameValidation";
+import { updateUserUploadCount } from "@/helpers/userHelpers";
+
 AWS.config.update({
   region: awsConfig.region,
   accessKeyId: awsConfig.accessKeyId,
   secretAccessKey: awsConfig.secretAccessKey,
 });
+
 export default function ProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,20 +44,19 @@ export default function ProfilePage() {
   const [changePasswordMessage, setChangePasswordMessage] = useState("");
   const [changePasswordMessageColor, setChangePasswordMessageColor] = useState("red-500");
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"))
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
   useEffect(() => {
     const loadUserInfo = async () => {
-
       try {
         setIsLoading(true);
-        const res = await fetch("/api/users/user", {
-        });
+        const res = await fetch("/api/users/user-info", {});
         if (!res.ok) {
           throw new Error(`Failed to fetch user info: ${res.statusText}`);
         }
         const data = await res.json();
         if (!data.isConfirmed) {
-          router.push(`/register-success?`);
+            router.push(`/register-success?token=${data.token}`);
           return;
         }
 
@@ -72,16 +76,6 @@ export default function ProfilePage() {
     };
     loadUserInfo();
   }, [router]);
-
-  const updateUserUploadCount = async (userId: string, uploadCount: number, lastUploadDate: string) => {
-    await fetch("/api/users/update-upload-count", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ uploadCount, lastUploadDate }),
-    });
-  };
 
   const handleLogout = async () => {
     await fetch("/api/users/logout", { method: "POST" });
@@ -108,30 +102,29 @@ export default function ProfilePage() {
         const data = await res.json();
         setChangePasswordMessage(data.message || "Failed to change password. Please try again.");
       }
-    } catch  {
+    } catch {
       setChangePasswordMessageColor("red-500");
       setChangePasswordMessage("An error occurred. Please try again.");
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.size <= 5 * 1024 * 1024) {
-      const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
-      if (!allowedTypes.includes(file.type)) {
-        alert("Only PNG and JPEG files are allowed.");
-        return;
-      }
-      setSelectedFile(file);
-    } else {
-      alert("File size should be less than 5 MB.");
+    if (!file) return;
+
+    const validationResult = await validateImageFile(file);
+    if (!validationResult.isValid) {
+      alert(validationResult.message);
+      return;
     }
+
+    setSelectedFile(file);
   };
+
+  const handleNameChange = createNameChangeHandler;
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    const today = new Date().toISOString().split("T")[0];
-    
 
     if (!selectedFile) {
       setUploadMessage("Please select a file to upload.");
@@ -155,7 +148,6 @@ export default function ProfilePage() {
       formData.append("secondPersonFullName", secondPersonFullName);
       formData.append("file", selectedFile);
 
-      const token = Cookies.get('auth-token');
       const res = await fetch("/api/users/user-upload", {
         method: "POST",
         body: formData,
@@ -164,51 +156,30 @@ export default function ProfilePage() {
       const data = await res.json();
 
       if (res.ok) {
-       
-       
-        const updatedUserInfoRes = await fetch("/api/users/user", {
-        });
+        const updatedUserInfoRes = await fetch("/api/users/user", {});
         if (updatedUserInfoRes.ok) {
           const updatedUserInfo = await updatedUserInfoRes.json();
           setUserInfo(updatedUserInfo);
         }
-        const currentUploadCount = userInfo.uploadCount || 0;
-        if (userInfo.lastUploadDate === today && currentUploadCount <= 0) {
-          setUploadMessage("You have reached the daily upload limit.");
-          return;
-        }
-        const newUploadCount = currentUploadCount - 1;
-        setUserInfo((prev) => ({
-          ...prev,
-          uploadCount: newUploadCount,
-          lastUploadDate: today,
-        }));
-        await updateUserUploadCount(userInfo.Id, newUploadCount, today); // Update the upload count in the database
+
         setUploadMessage("File uploaded successfully!");
+        setSelectedFile(null);
+        setFirstPersonFullName("");
+        setSecondPersonFullName("");
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       } else {
         setUploadMessage(data.message || "Failed to upload file. Please try again.");
       }
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error("Error uploading file:", error);
       setUploadMessage("Failed to upload file. Please try again.");
-    }
-  };
-
-  const handleNameChange = (
-    setter: React.Dispatch<React.SetStateAction<string>>
-  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const nameRegex = /^[a-zA-Z\s]*$/; // Allow alphabetic characters and spaces
-    if (nameRegex.test(value)) {
-      setter(value);
-    } else {
-      alert("Only alphabetic characters and spaces are allowed.");
     }
   };
 
   const handleNotificationChange = async (enabled: boolean) => {
     setEmailNotifications(enabled);
-    const token = Cookies.get("auth-token");
     try {
       const res = await fetch("/api/users/set-notification", {
         method: "POST",
@@ -234,9 +205,9 @@ export default function ProfilePage() {
     if (!selectedFile) {
       setUploadMessage("Please select a file to upload.");
     } else {
-      const form = document.createElement('form');
-      form.addEventListener('submit', handleUpload as unknown as EventListener);
-      const event = new Event('submit', { bubbles: true, cancelable: true });
+      const form = document.createElement("form");
+      form.addEventListener("submit", handleUpload as unknown as EventListener);
+      const event = new Event("submit", { bubbles: true, cancelable: true });
       form.dispatchEvent(event);
     }
   };
@@ -266,27 +237,56 @@ export default function ProfilePage() {
         <div className="border p-4 rounded-lg mb-6 bg-white/20">
           <h3 className="font-semibold sm:text[1.5vw] md:text-xl mb-4 text-white">Personal Information</h3>
           <label className="block  md:text-sm font-medium text-gray-300">Email</label>
-          <input type="email" value={userInfo.Email} disabled className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white" />
+          <input
+            type="email"
+            value={userInfo.Email}
+            disabled
+            className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white"
+          />
           <label className="block md:text-sm font-medium text-gray-300">First Name</label>
-          <input type="text" value={userInfo.Name} disabled className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white" />
+          <input
+            type="text"
+            value={userInfo.Name}
+            disabled
+            className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white"
+          />
           <label className="block md:text-sm font-medium text-gray-300">Last Name</label>
-          <input type="text" value={userInfo.FamilyName} disabled className="w-full p-2 border rounded-md bg-white/10 text-white" />
+          <input
+            type="text"
+            value={userInfo.FamilyName}
+            disabled
+            className="w-full p-2 border rounded-md bg-white/10 text-white"
+          />
         </div>
 
         {/* Change Password */}
         <form onSubmit={handleUpload} className="border p-4 rounded-lg mb-6 bg-white/20">
           <h3 className="font-semibold sm:text[1.5vw] md:text-xl mb-4 text-white">Change Password</h3>
           <label className="block md:text-sm font-medium text-gray-300">Current Password</label>
-          <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white" />
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white"
+          />
           <label className="block md:text-sm font-medium text-gray-300">New Password</label>
-          <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white" />
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white"
+          />
           <label className="block md:text-sm font-medium text-gray-300">Confirm New Password</label>
           <input type="password" className="mb-4 w-full p-2 border rounded-md bg-white/10 text-white" />
-          <button type="button" onClick={handleChangePassword} className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">Update Password</button>
+          <button
+            type="button"
+            onClick={handleChangePassword}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg"
+          >
+            Update Password
+          </button>
           {changePasswordMessage && (
-            <p className={`mt-4 text-center text-${changePasswordMessageColor}`}>
-              {changePasswordMessage}
-            </p>
+            <p className={`mt-4 text-center text-${changePasswordMessageColor}`}>{changePasswordMessage}</p>
           )}
         </form>
 
@@ -304,10 +304,20 @@ export default function ProfilePage() {
         {/* Upload Connection */}
         <form className="border p-4 rounded-lg mb-6 bg-white/20">
           <h3 className="font-semibold sm:text[1.5vw] md:text-xl mb-4 text-white">Upload Connection</h3>
-            <label className="block md:text-sm font-medium text-white">First Person&apos;s Full Name</label>
-            <input type="text" value={firstPersonFullName} onChange={handleNameChange(setFirstPersonFullName)} className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white" />
-            <label className="block md:text-sm font-medium text-white">Second Person&apos;s Full Name</label>
-            <input type="text" value={secondPersonFullName} onChange={handleNameChange(setSecondPersonFullName)} className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white" />
+          <label className="block md:text-sm font-medium text-white">First Person&apos;s Full Name</label>
+          <input
+            type="text"
+            value={firstPersonFullName}
+            onChange={handleNameChange(setFirstPersonFullName)}
+            className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white"
+          />
+          <label className="block md:text-sm font-medium text-white">Second Person&apos;s Full Name</label>
+          <input
+            type="text"
+            value={secondPersonFullName}
+            onChange={handleNameChange(setSecondPersonFullName)}
+            className="mb-3 w-full p-2 border rounded-md bg-white/10 text-white"
+          />
           <label className="block md:text-sm font-medium text-gray-300">Connection Picture</label>
           <div
             className="border-dashed border-2 p-4 text-center cursor-pointer mb-4 bg-white/10 text-white"
@@ -320,37 +330,47 @@ export default function ProfilePage() {
               className="hidden"
               ref={fileInputRef}
             />
-            {selectedFile ? <p>{selectedFile.name}</p> : <p className="text-gray-300">Upload a file or drag and drop (PNG, JPG, up to 5MB)</p>}
+            {selectedFile ? (
+              <p>{selectedFile.name}</p>
+            ) : (
+              <p className="text-gray-300">Upload a file or drag and drop (PNG, JPG, up to 5MB)</p>
+            )}
           </div>
-          
-          <button type="button" onClick={handleUploadButtonClick} className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg">Upload Connection</button>
+
+          <button
+            type="button"
+            onClick={handleUploadButtonClick}
+            className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg"
+          >
+            Upload Connection
+          </button>
           {uploadMessage && (
             <p className="mt-4 text-center font-medium text-white">{uploadMessage}</p>
           )}
-          <p className="mt-4 text-center text-white">
-            Uploads left today: {userInfo.uploadCount}
-          </p>
+          <p className="mt-4 text-center text-white">Uploads left today: {userInfo.uploadCount}</p>
         </form>
-          
+
         {/* Email Notifications */}
         <div className="border p-4 rounded-lg flex items-center justify-between bg-white/20">
           <div>
             <h3 className="font-semibold sm:text[1.5vw] md:text-xl text-white">Email Notifications</h3>
             <p className="text-gray-300">Get notified about updates and activities</p>
           </div>
-          <Switch size="small"  sx={{
-        "& .MuiSwitch-thumb": {
-          width: isSmallScreen ? 14 : 18,
-          height: isSmallScreen ? 14 : 18,
-        },
-        "& .MuiSwitch-track": {
-          height: isSmallScreen ? 10 : 15,
-          width: isSmallScreen ? 22 : 35,
-        },
-      }}
+          <Switch
+            size="small"
+            sx={{
+              "& .MuiSwitch-thumb": {
+                width: isSmallScreen ? 14 : 18,
+                height: isSmallScreen ? 14 : 18,
+              },
+              "& .MuiSwitch-track": {
+                height: isSmallScreen ? 10 : 15,
+                width: isSmallScreen ? 22 : 35,
+              },
+            }}
             checked={emailNotifications}
             onChange={(e) => handleNotificationChange(e.target.checked)}
-          />  
+          />
         </div>
 
         <div className="text-[1.2vw] flex justify-between mt-8">

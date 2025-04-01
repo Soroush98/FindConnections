@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from 'js-cookie';
+// Import helper functions
+import { validateImageFile } from "@/helpers/fileValidation";
+import { createNameChangeHandler, isValidFullName } from "@/helpers/nameValidation";
 
 export default function AdminUploadPage() {
   const router = useRouter();
@@ -19,18 +21,9 @@ export default function AdminUploadPage() {
       try {
         setIsLoading(true);
         
-        const token = Cookies.get('admin-token');
-        if (!token) {
-          router.push("/admin");
-          return;
-        }
-
-        const res = await fetch("/api/admin/admin-login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
+        // Verify admin session using HTTP-only cookie
+        const res = await fetch("/api/admin/verify-session", {
+          method: "GET"
         });
 
         if (!res.ok) {
@@ -48,18 +41,17 @@ export default function AdminUploadPage() {
     loadUserInfo();
   }, [router]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.size <= 5 * 1024 * 1024) {
-      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-      if (!allowedTypes.includes(file.type)) {
-        alert("Only PNG and JPEG files are allowed.");
-        return;
-      }
-      setSelectedFile(file);
-    } else {
-      alert("File size should be less than 5 MB.");
+    if (!file) return;
+
+    const validationResult = await validateImageFile(file);
+    if (!validationResult.isValid) {
+      alert(validationResult.message);
+      return;
     }
+    
+    setSelectedFile(file);
   };
 
   const handleUpload = async () => {
@@ -68,8 +60,7 @@ export default function AdminUploadPage() {
       return;
     }
 
-    const nameRegex = /^[a-zA-Z]+\s[a-zA-Z]+$/;
-    if (!nameRegex.test(firstPersonFullName) || !nameRegex.test(secondPersonFullName)) {
+    if (!isValidFullName(firstPersonFullName) || !isValidFullName(secondPersonFullName)) {
       setUploadMessage("Name format is incorrect. Please use '{name} {familyname}' format.");
       return;
     }
@@ -80,12 +71,9 @@ export default function AdminUploadPage() {
       formData.append("secondPersonFullName", secondPersonFullName);
       formData.append("file", selectedFile);
 
-      const token = Cookies.get('admin-token');
       const res = await fetch("/api/admin/admin-upload", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
+        credentials: "include", 
         body: formData,
       });
 
@@ -108,20 +96,18 @@ export default function AdminUploadPage() {
       return;
     }
 
-    const nameRegex = /^[a-zA-Z]+\s[a-zA-Z]+$/;
-    if (!nameRegex.test(firstPersonFullName) || !nameRegex.test(secondPersonFullName)) {
+    if (!isValidFullName(firstPersonFullName) || !isValidFullName(secondPersonFullName)) {
       setDeleteMessage("Name format is incorrect. Please use '{name} {familyname}' format.");
       return;
     }
 
     try {
-      const token = Cookies.get('admin-token');
       const res = await fetch("/api/admin/delete-connection", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
+        credentials: "include", 
         body: JSON.stringify({ firstPersonFullName, secondPersonFullName }),
       });
 
@@ -143,19 +129,16 @@ export default function AdminUploadPage() {
       return;
     }
 
-    const nameRegex = /^[a-zA-Z]+\s[a-zA-Z]+$/;
-    if (!nameRegex.test(nodeFullName)) {
+    if (!isValidFullName(nodeFullName)) {
       setDeleteNodeMessage("Name format is incorrect. Please use '{name} {familyname}' format.");
       return;
     }
 
     try {
-      const token = Cookies.get('admin-token');
       const res = await fetch("/api/admin/delete-node", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ fullName: nodeFullName }),
       });
@@ -172,19 +155,19 @@ export default function AdminUploadPage() {
     }
   };
 
-  const handleNameChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const nameRegex = /^[a-zA-Z\s]*$/; // Allow alphabetic characters and spaces
-    if (nameRegex.test(value)) {
-      setter(value);
-    } else {
-      alert("Only alphabetic characters and spaces are allowed.");
-    }
-  };
+  // Use the helper function for name input handling
+  const handleNameChange = createNameChangeHandler;
 
-  const handleLogout = () => {
-    Cookies.set('admin-token', '');
-    router.push("/admin");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/logout", {
+        method: "POST",
+      });
+      router.push("/admin");
+    } catch (error) {
+      console.error('Error logging out:', error);
+      router.push("/admin");
+    }
   };
 
   if (isLoading) {
