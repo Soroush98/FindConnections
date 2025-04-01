@@ -58,8 +58,6 @@ Deploy the FindConnections platform by following these steps:
 5. **Access the application**:
     Open your web browser and navigate to `http://localhost:3000`.
 
-    * Note that only people who have access to the `/api` folder and environment variables can use and test the backend. 
-
 ## Architecture
 
 ![alt text](Architecture.png)
@@ -72,11 +70,8 @@ FindConnections implements several security features to ensure the safety and pr
 
 1. **Authentication and Authorization**:
     - Role-based access control to restrict access to certain features based on user roles.
-    - When using the API, the authorization header should include the JWT (JSON Web Token)
-      provided by the server. This ensures that only users with the appropriate roles can access specific APIs.
     - The JWT is stored as an HTTP-only cookie to prevent client-side access and reduce the risk of XSS attacks.
 2. **Data Encryption**:
-    - All sensitive data, such as passwords, are encrypted using industry-standard algorithms before being stored in the database.
     - Passwords are hashed using bcrypt to ensure they are stored securely.
 
 3. **Input Validation**:
