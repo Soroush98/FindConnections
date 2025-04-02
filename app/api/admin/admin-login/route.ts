@@ -56,7 +56,15 @@ export async function GET(req: NextRequest) {
 
     // Set HTTP-only secure cookie
     const response = NextResponse.json({ message: 'Login successful' }, { status: 200 });
-    response.headers.set('Set-Cookie', `admin-token=${token}; HttpOnly; Secure; Max-Age=${60 * 60 * 8}; Path=/; SameSite=Strict`);
+    response.cookies.set({
+      name: 'admin-token',
+      value: token,
+      httpOnly: true,
+      secure: false, // Use secure cookies in production
+      maxAge: 60 * 60 * 8, // 8 hours in seconds
+      path: '/',
+      sameSite: 'strict'
+    });
     return response;
 
   } catch (error) {

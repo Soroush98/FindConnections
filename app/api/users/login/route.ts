@@ -3,7 +3,7 @@ import { DynamoDB } from 'aws-sdk';
 import { awsConfig, key } from '@/config';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { serialize } from 'cookie';
+
 
 const documentClient = new DynamoDB.DocumentClient({
   region: awsConfig.region,
@@ -146,20 +146,20 @@ export async function POST(request: NextRequest) {
     // Generate a new JWT token
     const authToken = jwt.sign({ email: user.Email, id: user.Id , role: "user"}, SECRET_KEY, { expiresIn: '1h' });
     
-    // Create cookie
-    const cookieStr = serialize('auth-token', authToken, {
+    // Set cookie via NextResponse object
+    const response = NextResponse.json({ message: 'Login successful' });
+    response.cookies.set({
+      name: 'auth-token',
+      value: authToken,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
       path: '/',
-      maxAge: 60 * 60 * 24 // 1 day
+      maxAge: 60 * 60 * 24, // 1 day in seconds
+      sameSite: 'strict',
+      secure: false
     });
     
-    // Return response with cookie set
-    return NextResponse.json(
-      { message: 'Login successful' },
-      { headers: { 'Set-Cookie': cookieStr } }
-    );
+    return response;
+    
   } catch (error) {
     console.error('DynamoDB error:', error);
     return NextResponse.json(

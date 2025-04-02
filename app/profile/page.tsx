@@ -11,6 +11,7 @@ import { validateImageFile } from "@/helpers/fileValidation";
 import { createNameChangeHandler } from "@/helpers/nameValidation";
 import { updateUserUploadCount } from "@/helpers/userHelpers";
 
+
 AWS.config.update({
   region: awsConfig.region,
   accessKeyId: awsConfig.accessKeyId,
@@ -226,10 +227,10 @@ export default function ProfilePage() {
     );
   }
 
-  if (!userInfo.isConfirmed) {
-    console.log("Email not confirmed, redirecting to register-success page");
-    return null;
-  }
+  // if (!userInfo.isConfirmed) {
+  //   console.log("Email not confirmed, redirecting to register-success page");
+  //   return null;
+  // }
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-purple-800 to-blue-900 p-15 flex items-center justify-center">
