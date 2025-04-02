@@ -5,12 +5,12 @@ import AWS from "aws-sdk";
 import { awsConfig } from "@/config";
 import { UserInfo } from "@/types/UserInfo";
 import Switch from "@mui/material/Switch";
+import Cookies from "js-cookie";
 import { useTheme, useMediaQuery } from "@mui/material";
 // Import helper functions
 import { validateImageFile } from "@/helpers/fileValidation";
 import { createNameChangeHandler } from "@/helpers/nameValidation";
 import { updateUserUploadCount } from "@/helpers/userHelpers";
-
 
 AWS.config.update({
   region: awsConfig.region,
@@ -44,6 +44,7 @@ export default function ProfilePage() {
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [changePasswordMessage, setChangePasswordMessage] = useState("");
   const [changePasswordMessageColor, setChangePasswordMessageColor] = useState("red-500");
+  const [csrfToken, setCsrfToken] = useState("");
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -51,17 +52,17 @@ export default function ProfilePage() {
     const loadUserInfo = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch("/api/users/verify-user", {
-          credentials: "include",
-        });
+        const res = await fetch("/api/users/verify-user", {});
         if (!res.ok) {
           throw new Error(`Failed to fetch user info: ${res.statusText}`);
         }
         const data = await res.json();
         if (!data.isConfirmed) {
-            router.push(`/register-success?token=${data.token}`);
+          const token = Cookies.get("auth-token");
+          router.push(`/register-success?token=${token}`);
           return;
-          }
+        }
+
         const today = new Date().toISOString().split("T")[0];
         if (data.lastUploadDate !== today) {
           data.uploadCount = 10;
@@ -70,7 +71,7 @@ export default function ProfilePage() {
 
         setUserInfo(data);
         setEmailNotifications(data.notification_enabled === 1);
-      } catch {
+      } catch (error) {
         router.push("/");
       } finally {
         setIsLoading(false);
@@ -79,9 +80,24 @@ export default function ProfilePage() {
     loadUserInfo();
   }, [router]);
 
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      try {
+        const res = await fetch("/api/users/csrf-token");
+        if (res.ok) {
+          const data = await res.json();
+          setCsrfToken(data.csrfToken);
+        }
+      } catch (error) {
+        console.error("Error fetching CSRF token:", error);
+      }
+    };
+
+    fetchCsrfToken();
+  }, []);
+
   const handleLogout = async () => {
-    await fetch("/api/users/logout", { method: "POST",
-      credentials: "include" });
+    await fetch("/api/users/logout", { method: "POST" });
     router.push("/");
   };
 
@@ -91,8 +107,9 @@ export default function ProfilePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
         },
-        credentials: "include",
+        credentials: "include", // Include credentials such as cookies
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       if (res.ok) {
@@ -154,19 +171,21 @@ export default function ProfilePage() {
 
       const res = await fetch("/api/users/user-upload", {
         method: "POST",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+        },
         body: formData,
-        credentials: "include",
       });
 
       const data = await res.json();
 
       if (res.ok) {
-            setUserInfo((prev) => ({
-              ...prev,
-              uploadCount: data.user.uploadCount,
-              lastUploadDate: data.user.lastUploadDate || prev.lastUploadDate
-            }));
-        setUploadMessage(data.message);
+        setUserInfo((prev) => ({
+          ...prev,
+          uploadCount: data.user.uploadCount,
+          lastUploadDate: data.user.lastUploadDate || prev.lastUploadDate
+        }));
+        setUploadMessage("File uploaded successfully!");
         setSelectedFile(null);
         setFirstPersonFullName("");
         setSecondPersonFullName("");
@@ -190,7 +209,6 @@ export default function ProfilePage() {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
         body: JSON.stringify({ enabled }),
       });
       if (!res.ok) {
@@ -227,10 +245,10 @@ export default function ProfilePage() {
     );
   }
 
-  // if (!userInfo.isConfirmed) {
-  //   console.log("Email not confirmed, redirecting to register-success page");
-  //   return null;
-  // }
+  if (!userInfo.isConfirmed) {
+    console.log("Email not confirmed, redirecting to register-success page");
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-purple-800 to-blue-900 p-15 flex items-center justify-center">
@@ -266,6 +284,7 @@ export default function ProfilePage() {
 
         {/* Change Password */}
         <form onSubmit={handleUpload} className="border p-4 rounded-lg mb-6 bg-white/20">
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <h3 className="font-semibold sm:text[1.5vw] md:text-xl mb-4 text-white">Change Password</h3>
           <label className="block md:text-sm font-medium text-gray-300">Current Password</label>
           <input
@@ -308,6 +327,7 @@ export default function ProfilePage() {
 
         {/* Upload Connection */}
         <form className="border p-4 rounded-lg mb-6 bg-white/20">
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <h3 className="font-semibold sm:text[1.5vw] md:text-xl mb-4 text-white">Upload Connection</h3>
           <label className="block md:text-sm font-medium text-white">First Person&apos;s Full Name</label>
           <input

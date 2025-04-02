@@ -4,6 +4,7 @@ import AWS, { AWSError } from 'aws-sdk';
 import { awsConfig, key } from '@/config';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import { extractCsrfToken, validateCsrfToken } from '@/helpers/csrfHelper';
 // Import helper function
 import { isStrongPassword } from "@/helpers/userHelpers";
 
@@ -15,6 +16,7 @@ AWS.config.update({
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const SECRET_KEY = key.SECRET_KEY;
+const CSRF_SECRET = key.SECRET_KEY; // Ideally use a separate secret for CSRF
 
 async function getUserById(userId: string) {
   const params = {
@@ -42,6 +44,13 @@ async function updateUserPassword(userId: string, hashedPassword: string) {
 export async function POST(req: NextRequest) {
   if (req.method !== 'POST') {
     return NextResponse.json({ message: 'Method not allowed' }, { status: 405 });
+  }
+  
+  // Extract and validate CSRF token using helper
+  const providedToken = await extractCsrfToken(req);
+  
+  if (!providedToken || !(await validateCsrfToken(req, providedToken))) {
+    return NextResponse.json({ message: 'Invalid CSRF token' }, { status: 403 });
   }
 
   const { currentPassword, newPassword } = await req.json();

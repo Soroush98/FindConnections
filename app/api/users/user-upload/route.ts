@@ -5,6 +5,7 @@ import { awsConfig } from '@/config';
 import { parse } from 'cookie';
 import {key} from '@/config';
 import jwt from 'jsonwebtoken';
+import { extractCsrfToken, validateCsrfToken } from '@/helpers/csrfHelper';
 
 const SECRET_KEY = key.SECRET_KEY;
 const s3Client = new S3Client({
@@ -47,6 +48,12 @@ async function checkIfFileExists(firstPerson: string, secondPerson: string, file
 }
 
 export async function POST(req: NextRequest) {
+  // Extract and validate CSRF token using helper
+  const providedToken = await extractCsrfToken(req);
+  
+  if (!providedToken || !(await validateCsrfToken(req, providedToken))) {
+    return NextResponse.json({ message: 'Invalid CSRF token' }, { status: 403 });
+  }
   // Extract token from cookie or header
   let token;
   const cookieHeader = req.headers.get('cookie');
