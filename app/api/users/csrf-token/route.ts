@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     });
     
     return response;
-  } catch (error) {
+  } catch {
     return NextResponse.json({ message: 'Invalid authentication' }, { status: 401 });
   }
 }

@@ -71,7 +71,7 @@ export default function ProfilePage() {
 
         setUserInfo(data);
         setEmailNotifications(data.notification_enabled === 1);
-      } catch (error) {
+      } catch {
         router.push("/");
       } finally {
         setIsLoading(false);

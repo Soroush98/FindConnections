@@ -16,7 +16,7 @@ AWS.config.update({
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const SECRET_KEY = key.SECRET_KEY;
-const CSRF_SECRET = key.SECRET_KEY; // Ideally use a separate secret for CSRF
+
 
 async function getUserById(userId: string) {
   const params = {
