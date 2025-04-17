@@ -64,6 +64,12 @@ Deploy the FindConnections platform by following these steps:
 
 The website (frontend and backend) is deployed on the Vercel platform. Vercel connects with a DynamoDB database for user and admin information and authentication. Vercel retrieves connections between two selected individuals from an EC2 instance running a Neo4j database. Each connection includes an image URL stored in this database. Based on this URL, Vercel fetches the images from an Amazon S3 instance to display to the user.
 
+### Extended Architecture
+
+![alt text](ExtendedArchitecture.png)
+
+An additional Lambda-based pipeline has been integrated to allow admin users to automatically populate the dataset with new celebrity pair images. When an admin submits a webpage URL, an API Gateway forwards the request to a Lambda function that extracts image URLs and saves them. A second Lambda function is triggered via S3 to analyze the images using AWS Rekognition. If an image contains exactly two celebrities, it is saved back to the S3 bucket, expanding the dataset automatically.
+
 ## Security Features
 
 FindConnections implements several security features to ensure the safety and privacy of its users:
@@ -88,6 +94,18 @@ FindConnections implements several security features to ensure the safety and pr
 
 7. **IP Lockouts**:
     - If an IP address attempts multiple failed logins within a short timeframe, it will be temporarily banned to prevent brute-force attacks.
+
+## 🔄 Automated Celebrity Pair Detection and Addition (Added by @Soroush-aali-bagi)
+
+To enhance the dataset and streamline the process of adding new celebrity connections, an administrative feature has been introduced. This functionality allows administrators to input a URL pointing to a webpage containing celebrity images.​
+
+Upon submission, the system performs the following steps:
+1. **Image Extraction:** The system retrieves up to 50 images from the provided webpage.
+2. **Celebrity Recognition:** Each image is analyzed using AWS Rekognition's RecognizeCelebrities API to detect and identify celebrities present in the images.
+3. **Filtering Criteria:** Images that feature exactly two recognized celebrities are selected for inclusion.
+4. **Storage:** The qualifying images are stored in an Amazon S3 bucket, effectively expanding the dataset with new, relevant connections.
+
+This automated approach reduces the need for manual data entry, ensuring a more efficient and scalable method for maintaining and growing the celebrity connections database.
 
 ## Development
 
