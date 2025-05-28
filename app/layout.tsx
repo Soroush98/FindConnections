@@ -22,7 +22,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        
+       <meta
+          name="description"
+          content="FindConnections enables users to discover connections between notable individuals by identifying instances where they have been photographed together, either directly or through a short chain of others who share photos."
+        />
       <Script
         strategy="afterInteractive"
         src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
