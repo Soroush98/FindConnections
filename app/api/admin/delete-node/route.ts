@@ -46,14 +46,24 @@ export async function POST(req: NextRequest) {
 
     if (!fullName) {
       return NextResponse.json({ message: 'Person name is required' }, { status: 400 });
-    }
-
-    // Delete node and all its relationships in Neo4j
+    }    // Delete node and all its relationships in Neo4j
     const session = driver.session();
     let imageUrls: string[] = [];
 
     try {
-      // First, get all image URLs associated with this person's relationships
+      // First, check if the node exists
+      const nodeCheckResult = await session.run(
+        `MATCH (p:Person {name: $name}) RETURN p`,
+        { name: fullName }
+      );
+
+      if (nodeCheckResult.records.length === 0) {
+        return NextResponse.json({ 
+          message: `No node with such name found: ${fullName}` 
+        }, { status: 404 });
+      }
+
+      // Get all image URLs associated with this person's relationships
       const result = await session.run(
         `
         MATCH (p:Person {name: $name})-[r:PHOTOGRAPHED_WITH]-()

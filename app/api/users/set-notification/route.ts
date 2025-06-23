@@ -1,29 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import AWS from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { awsConfig, key } from '@/config';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-AWS.config.update({
-  accessKeyId: awsConfig.accessKeyId,
-  secretAccessKey: awsConfig.secretAccessKey,
+const client = new DynamoDBClient({
   region: awsConfig.region,
+  credentials: {
+    accessKeyId: awsConfig.accessKeyId,
+    secretAccessKey: awsConfig.secretAccessKey,
+  },
 });
 
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const dynamoDb = DynamoDBDocumentClient.from(client);
 const SECRET_KEY = key.SECRET_KEY;
 
 async function updateUserNotification(userId: string, enabled: boolean) {
-  const params = {
+  const command = new UpdateCommand({
     TableName: "FL_Users",
     Key: { "Id": userId },
     UpdateExpression: 'set notification_enabled = :enabled',
     ExpressionAttributeValues: {
       ':enabled': enabled ? 1 : 0,
     },
-  };
+  });
 
-  await dynamoDb.update(params).promise();
+  await dynamoDb.send(command);
 }
 
 export async function POST(req: NextRequest) {

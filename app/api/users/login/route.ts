@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DynamoDB } from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, UpdateCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { awsConfig, key } from '@/config';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-
-const documentClient = new DynamoDB.DocumentClient({
+const client = new DynamoDBClient({
   region: awsConfig.region,
-  accessKeyId: awsConfig.accessKeyId,
-  secretAccessKey: awsConfig.secretAccessKey
+  credentials: {
+    accessKeyId: awsConfig.accessKeyId,
+    secretAccessKey: awsConfig.secretAccessKey,
+  },
 });
+
+const documentClient = DynamoDBDocumentClient.from(client);
 
 const SECRET_KEY = key.SECRET_KEY;
 const MAX_ATTEMPTS = 5;
@@ -17,21 +21,22 @@ const ATTEMPT_WINDOW = 60 * 1000; // 1 minute in milliseconds
 const BAN_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 async function getIpBanStatus(ip: string) {
-  const params = {
+  const command = new GetCommand({
     TableName: "FL_BannedIPs",
     Key: { ip },
-  };
+  });
 
-  const result = await documentClient.get(params).promise();
+  const result = await documentClient.send(command);
   return result.Item;
 }
 
 async function getAndIncrementLoginAttempts(ip: string) {
   // Get current attempt info
-  const oldData = await documentClient.get({
+  const getCommand = new GetCommand({
     TableName: "FL_BannedIPs",
     Key: { ip },
-  }).promise();
+  });
+  const oldData = await documentClient.send(getCommand);
   let oldAttempts = oldData.Item?.attempts || 0;
   const oldLastAttempt = oldData.Item?.lastAttempt || 0;
 
@@ -43,7 +48,7 @@ async function getAndIncrementLoginAttempts(ip: string) {
 
   const newAttempts = oldAttempts + 1;
   // Update in DB
-  const result = await documentClient.update({
+  const updateCommand = new UpdateCommand({
     TableName: "FL_BannedIPs",
     Key: { ip },
     UpdateExpression: "SET attempts = :a, lastAttempt = :t",
@@ -52,14 +57,15 @@ async function getAndIncrementLoginAttempts(ip: string) {
       ":t": now,
     },
     ReturnValues: "UPDATED_NEW",
-  }).promise();
+  });
+  const result = await documentClient.send(updateCommand);
 
   return result.Attributes;
 }
 
 
 async function banIp(ip: string, userEmail: string) {
-  await documentClient.update({
+  const command = new UpdateCommand({
     TableName: "FL_BannedIPs",
     Key: { ip },
     UpdateExpression: "SET bannedUntil = :until, bannedEmail = :email",
@@ -67,11 +73,12 @@ async function banIp(ip: string, userEmail: string) {
       ":until": Date.now() + BAN_DURATION,
       ":email": userEmail,
     },
-  }).promise();
+  });
+  await documentClient.send(command);
 }
 
 async function resetBan(ip: string) {
-  await documentClient.update({
+  const command = new UpdateCommand({
     TableName: "FL_BannedIPs",
     Key: { ip },
     UpdateExpression: "REMOVE bannedUntil, bannedEmail SET attempts = :start, lastAttempt = :now",
@@ -79,7 +86,8 @@ async function resetBan(ip: string) {
       ":start": 0,
       ":now": Date.now(),
     },
-  }).promise();
+  });
+  await documentClient.send(command);
 }
 
 export async function POST(request: NextRequest) {
@@ -116,9 +124,9 @@ export async function POST(request: NextRequest) {
     FilterExpression: "Email = :email",
     ExpressionAttributeValues: { ":email": Email }
   };
-
   try {
-    const { Items } = await documentClient.scan(params).promise();
+    const command = new ScanCommand(params);
+    const { Items } = await documentClient.send(command);
     const user = Items?.[0] || null;
 
     if (!user) {

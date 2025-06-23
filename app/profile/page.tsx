@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import AWS from "aws-sdk";
-import { awsConfig } from "@/config";
 import { UserInfo } from "@/types/UserInfo";
 import Switch from "@mui/material/Switch";
 import Cookies from "js-cookie";
@@ -11,12 +9,6 @@ import { useTheme, useMediaQuery } from "@mui/material";
 import { validateImageFile } from "@/helpers/fileValidation";
 import { createNameChangeHandler } from "@/helpers/nameValidation";
 import { updateUserUploadCount } from "@/helpers/userHelpers";
-
-AWS.config.update({
-  region: awsConfig.region,
-  accessKeyId: awsConfig.accessKeyId,
-  secretAccessKey: awsConfig.secretAccessKey,
-});
 
 export default function ProfilePage() {
   const router = useRouter();

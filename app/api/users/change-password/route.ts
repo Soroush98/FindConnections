@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import AWS, { AWSError } from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { awsConfig, key } from '@/config';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
@@ -8,13 +9,15 @@ import { extractCsrfToken, validateCsrfToken } from '@/helpers/csrfHelper';
 // Import helper function
 import { isStrongPassword } from "@/helpers/userHelpers";
 
-AWS.config.update({
-  accessKeyId: awsConfig.accessKeyId,
-  secretAccessKey: awsConfig.secretAccessKey,
+const client = new DynamoDBClient({
   region: awsConfig.region,
+  credentials: {
+    accessKeyId: awsConfig.accessKeyId,
+    secretAccessKey: awsConfig.secretAccessKey,
+  },
 });
 
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const dynamoDb = DynamoDBDocumentClient.from(client);
 const SECRET_KEY = key.SECRET_KEY;
 
 
@@ -24,7 +27,7 @@ async function getUserById(userId: string) {
     Key: { Id: userId },
   };
 
-  const result = await dynamoDb.get(params).promise();
+  const result = await dynamoDb.send(new GetCommand(params));
   return result.Item;
 }
 
@@ -38,7 +41,7 @@ async function updateUserPassword(userId: string, hashedPassword: string) {
     },
   };
 
-  await dynamoDb.update(params).promise();
+  await dynamoDb.send(new UpdateCommand(params));
 }
 
 export async function POST(req: NextRequest) {
@@ -89,12 +92,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
-    }
-
-    if (error instanceof jwt.TokenExpiredError) {
+    }    if (error instanceof jwt.TokenExpiredError) {
       return NextResponse.json({ message: 'Token expired' }, { status: 401 });
     }
-    if ((error as AWSError).code === 'ValidationException') {
+    if (error instanceof Error && error.name === 'ValidationException') {
       return NextResponse.json({ message: 'Validation error' }, { status: 400 });
     }
     

@@ -1,34 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import AWS from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, UpdateCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { awsConfig } from '@/config';
 import jwt from 'jsonwebtoken';
 import { key } from '@/config';
 // Import helper functions
 import { isStrongPassword, isValidEmail } from "@/helpers/userHelpers";
 
-AWS.config.update({
-  accessKeyId: awsConfig.accessKeyId,
-  secretAccessKey: awsConfig.secretAccessKey,
+const client = new DynamoDBClient({
   region: awsConfig.region,
+  credentials: {
+    accessKeyId: awsConfig.accessKeyId,
+    secretAccessKey: awsConfig.secretAccessKey,
+  },
 });
+
 const SECRET_KEY = key.SECRET_KEY;
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const dynamoDb = DynamoDBDocumentClient.from(client);
 
 async function getUserByEmail(email: string) {
-  const params = {
+  const command = new ScanCommand({
     TableName: "FL_Users",
     FilterExpression: "Email = :email",
     ExpressionAttributeValues: {
       ":email": email,
     },
-  };
+  });
 
-  const result = await dynamoDb.scan(params).promise();
+  const result = await dynamoDb.send(command);
   return result.Items?.[0];
 }
 async function updateUserPassword(userId: string, hashedPassword: string) {
-    const params = {
+    const command = new UpdateCommand({
         TableName: "FL_Users",
         Key: { Id: userId },
         UpdateExpression: 'set Password = :password, resetToken = :null, resetTokenExpiration = :null',
@@ -36,24 +40,26 @@ async function updateUserPassword(userId: string, hashedPassword: string) {
             ':password': hashedPassword,
             ':null': null,
         },
-    };
+    });
 
-    await dynamoDb.update(params).promise();
+    await dynamoDb.send(command);
 }
 
 // Removes ban for all IPs that match the user's email
 async function removeBanByEmail(email: string) {
-  const scanResult = await dynamoDb.scan({
+  const scanCommand = new ScanCommand({
     TableName: "FL_BannedIPs",
     FilterExpression: "bannedEmail = :userEmail",
     ExpressionAttributeValues: {
       ":userEmail": email,
     },
-  }).promise();
+  });
+
+  const scanResult = await dynamoDb.send(scanCommand);
 
   if (scanResult.Items) {
     for (const item of scanResult.Items) {
-      await dynamoDb.update({
+      const updateCommand = new UpdateCommand({
         TableName: "FL_BannedIPs",
         Key: { ip: item.ip },
         UpdateExpression: "REMOVE bannedUntil, bannedEmail SET attempts = :start, lastAttempt = :now",
@@ -61,7 +67,9 @@ async function removeBanByEmail(email: string) {
           ":start": 0,
           ":now": Date.now(),
         },
-      }).promise();
+      });
+      
+      await dynamoDb.send(updateCommand);
     }
   }
 }

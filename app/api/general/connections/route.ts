@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { neo4jConfig, awsConfig } from "@/config";
 import neo4j from "neo4j-driver";
-import AWS from 'aws-sdk';
+import { S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 
-
-const s3 = new AWS.S3({
-  accessKeyId: awsConfig.accessKeyId,
-  secretAccessKey: awsConfig.secretAccessKey,
+const s3Client = new S3Client({
   region: awsConfig.region,
+  credentials: {
+    accessKeyId: awsConfig.accessKeyId,
+    secretAccessKey: awsConfig.secretAccessKey,
+  },
 });
 
 const driver = neo4j.driver(
@@ -70,16 +73,13 @@ async function findConnections(name1: string, name2: string) {
     } finally {
       await session.close();
     }
-  }
- 
-  
+  }  
   async function getPresignedUrl(key: string): Promise<string> {
-    const params = {
+    const command = new GetObjectCommand({
       Bucket: awsConfig.bucketName,
       Key: key,
-      Expires: 60, // URL expiration time in seconds
-    };
+    });
   
-    const url = await s3.getSignedUrlPromise('getObject', params);
+    const url = await getSignedUrl(s3Client, command, { expiresIn: 60 });
     return url;
   }

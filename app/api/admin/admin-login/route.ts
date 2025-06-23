@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DynamoDB } from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { awsConfig, key } from '@/config';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 
-const dynamoDb = new DynamoDB.DocumentClient({
+const client = new DynamoDBClient({
   region: awsConfig.region,
-  accessKeyId: awsConfig.accessKeyId,
-  secretAccessKey: awsConfig.secretAccessKey
+  credentials: {
+    accessKeyId: awsConfig.accessKeyId,
+    secretAccessKey: awsConfig.secretAccessKey,
+  },
 });
+
+const dynamoDb = DynamoDBDocumentClient.from(client);
 
 const SECRET_KEY = key.SECRET_KEY;
 
@@ -20,7 +25,7 @@ async function getAdminByEmail(email: string) {
     ExpressionAttributeValues: { ":email": email }
   };
 
-  const result = await dynamoDb.scan(params).promise();
+  const result = await dynamoDb.send(new ScanCommand(params));
   return result.Items?.[0] || null;
 }
 

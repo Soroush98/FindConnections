@@ -7,8 +7,27 @@ function ConfirmPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("");
-
   useEffect(() => {
+    const confirmEmail = async (token: string) => {
+      try {
+        const res = await fetch("/api/users/confirmByToken", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setMessage(data.error || "Invalid or expired token.");
+          return;
+        }
+        setMessage("Email confirmed successfully!");
+        router.push("/");
+      } catch (error) {
+        console.error('Error confirming email:', error);
+        setMessage("Failed to confirm email. Please try again.");
+      }
+    };
+
     if (searchParams) {
       const tokenParam = searchParams.get("token");
       if (tokenParam) {
@@ -19,27 +38,7 @@ function ConfirmPage() {
     } else {
       setMessage("Invalid or expired token.");
     }
-  }, [searchParams]);
-
-  const confirmEmail = async (token: string) => {
-    try {
-      const res = await fetch("/api/users/confirmByToken", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage(data.error || "Invalid or expired token.");
-        return;
-      }
-      setMessage("Email confirmed successfully!");
-      router.push("/");
-    } catch (error) {
-      console.error('Error confirming email:', error);
-      setMessage("Failed to confirm email. Please try again.");
-    }
-  };
+  }, [searchParams, router]);
 
   const resendConfirmationEmail = async (token: string) => {
     try {

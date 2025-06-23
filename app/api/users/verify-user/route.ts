@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server';
-import { DynamoDB } from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { awsConfig, key } from '@/config';
 import jwt from 'jsonwebtoken';
 import { UserInfo } from '@/types/UserInfo';
 import { cookies } from 'next/headers';
 
-
-const documentClient = new DynamoDB.DocumentClient({
+const client = new DynamoDBClient({
   region: awsConfig.region,
-  accessKeyId: awsConfig.accessKeyId,
-  secretAccessKey: awsConfig.secretAccessKey
+  credentials: {
+    accessKeyId: awsConfig.accessKeyId,
+    secretAccessKey: awsConfig.secretAccessKey,
+  },
 });
+
+const documentClient = DynamoDBDocumentClient.from(client);
 
 const SECRET_KEY = key.SECRET_KEY;
 
@@ -31,13 +35,12 @@ export async function GET() {
         { error: 'Not authenticated' },
         { status: 401 }
       );
-    }
-    const params = {
+    }    const command = new GetCommand({
       TableName: "FL_Users",
       Key: { Id: decoded.id }
-    };
+    });
 
-    const { Item } = await documentClient.get(params).promise();
+    const { Item } = await documentClient.send(command);
     const user: UserInfo | null = Item ? (Item as UserInfo) : null;
 
     if (!user) {

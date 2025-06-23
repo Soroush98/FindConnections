@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import AWS from 'aws-sdk';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import nodemailer from 'nodemailer';
 import jwt from 'jsonwebtoken';
 import { key } from '@/config';
@@ -7,24 +8,26 @@ import { awsConfig, emailConfig } from '@/config';
 
 const SECRET_KEY = key.SECRET_KEY;
 
-AWS.config.update({
-  accessKeyId: awsConfig.accessKeyId,
-  secretAccessKey: awsConfig.secretAccessKey,
+const client = new DynamoDBClient({
   region: awsConfig.region,
+  credentials: {
+    accessKeyId: awsConfig.accessKeyId,
+    secretAccessKey: awsConfig.secretAccessKey,
+  },
 });
 
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const dynamoDb = DynamoDBDocumentClient.from(client);
 
 async function getUserByEmail(email: string) {
-  const params = {
+  const command = new ScanCommand({
     TableName: "FL_Users",
     FilterExpression: "Email = :email",
     ExpressionAttributeValues: {
       ":email": email,
     },
-  };
+  });
 
-  const result = await dynamoDb.scan(params).promise();
+  const result = await dynamoDb.send(command);
   return result.Items?.[0];
 }
 async function storeResetToken(email: string, token: string, expiration: number) {
@@ -33,7 +36,7 @@ async function storeResetToken(email: string, token: string, expiration: number)
         throw new Error('User not found');
     }
 
-    const params = {
+    const command = new UpdateCommand({
         TableName: "FL_Users",
         Key: { Id: user.Id },
         UpdateExpression: 'set resetToken = :token, resetTokenExpiration = :expiration',
@@ -41,9 +44,9 @@ async function storeResetToken(email: string, token: string, expiration: number)
             ':token': token,
             ':expiration': expiration,
         },
-    };
+    });
 
-    await dynamoDb.update(params).promise();
+    await dynamoDb.send(command);
 }
 
 async function sendConfirmationEmail(email: string, token: string) {
