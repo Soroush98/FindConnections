@@ -371,9 +371,7 @@ function ConnectionsPageContent() {
                     </p>
                   </div>
                 </motion.div>
-              )}
-
-              {/* Progress Slider - Desktop Only */}
+              )}              {/* Node-based Progress Bar - Desktop Only */}
               <div className="hidden md:block">
                 <motion.div 
                   className="max-w-lg mx-auto"
@@ -381,16 +379,54 @@ function ConnectionsPageContent() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.9 }}
                 >
-                  <input
-                    type="range"
-                    min="0"
-                    max={maxIndex}
-                    step="0.01"
-                    value={sliderValue}
-                    onChange={handleSliderChange}
-                    className="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <div className="flex justify-between text-sm text-purple-200 mt-2">
+                  <div className="flex items-center justify-between mb-4">
+                    {connections[0]?.segments.map((segment: Segment, idx: number) => {
+                      const isActive = hoveredSegment && 
+                        hoveredSegment.start === segment.start && 
+                        hoveredSegment.end === segment.end;
+                      const isCompleted = sliderValue >= idx;
+                      
+                      return (
+                        <div key={idx} className="flex items-center">
+                          {/* Node */}
+                          <motion.div
+                            className={`relative cursor-pointer group`}
+                            onClick={() => {
+                              setSliderValue(idx);
+                              setHoveredSegment(segment);
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <div className={`w-4 h-4 rounded-full border-2 transition-all duration-300 ${
+                              isActive 
+                                ? 'bg-yellow-400 border-yellow-400 shadow-lg shadow-yellow-400/50' 
+                                : isCompleted
+                                ? 'bg-purple-400 border-purple-400'
+                                : 'bg-white/20 border-purple-300'
+                            }`} />
+                            
+                            {/* Node tooltip */}
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                              <div className="bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                Step {idx + 1}
+                              </div>
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                            </div>
+                          </motion.div>
+                          
+                          {/* Connection line (except for last node) */}
+                          {idx < connections[0].segments.length - 1 && (
+                            <div className={`flex-1 h-0.5 mx-2 transition-all duration-300 ${
+                              sliderValue > idx ? 'bg-purple-400' : 'bg-white/20'
+                            }`} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="flex justify-between text-sm text-purple-200">
                     <span>{name1}</span>
                     <span>{name2}</span>
                   </div>
