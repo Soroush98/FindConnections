@@ -75,16 +75,6 @@ function ConnectionsPageContent() {
     setHoveredSegment(null);
   };
 
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseFloat(e.target.value);
-    setSliderValue(newValue);
-    const index = Math.round(newValue);
-    if (connections.length > 0 && connections[0].segments[index]) {
-      setHoveredSegment(connections[0].segments[index]);
-    }
-  };
-
-  const maxIndex = connections.length > 0 ? connections[0].segments.length - 1 : 0;
   const displaySegment = hoveredSegment || (connections.length > 0 ? connections[0].segments[0] : null);
 
   const handleBack = () => {
