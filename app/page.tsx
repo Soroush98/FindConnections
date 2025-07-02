@@ -23,6 +23,11 @@ export default function HomePage() {
   const [showMembershipModal, setShowMembershipModal] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [showUploadSection, setShowUploadSection] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [uploadError, setUploadError] = useState("");
   const router = useRouter();
 
   // Set two random main pictures
@@ -117,6 +122,53 @@ export default function HomePage() {
     router.push(`/connections?name1=${encodeURIComponent(name1.trim())}&name2=${encodeURIComponent(name2.trim())}`);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+      setUploadError("");
+      setUploadMessage("");
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!uploadFile) {
+      setUploadError("Please select a file first");
+      return;
+    }
+
+    setUploadLoading(true);
+    setUploadError("");
+    setUploadMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+
+      const response = await fetch('/api/general/upload-temp', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUploadMessage(data.message);
+        setUploadFile(null);
+        // Reset file input
+        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+      } else {
+        setUploadError(data.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadError('Upload failed. Please try again.');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="min-h-screen w-full overflow-x-auto bg-gradient-to-r from-purple-800 to-blue-900 flex flex-col items-center justify-center p-4">
@@ -128,6 +180,12 @@ export default function HomePage() {
               >
               How It Works
               </a>
+              <button
+                onClick={() => setShowUploadSection(true)}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2 rounded-full font-bold transform hover:scale-105 transition-transform"
+              >
+                Upload Photo
+              </button>
             <button
               onClick={() => {
                 setActiveTab("login");
@@ -287,6 +345,102 @@ export default function HomePage() {
               >
                 Close
               </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Upload Photo Modal */}
+        {showUploadSection && (
+          <div className="text-black fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white p-8 rounded-2xl max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold mb-6 text-center">Upload Photo</h2>
+              
+              <div className="mb-6">
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="font-semibold text-blue-800 mb-2">📋 Upload Guidelines</h3>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Photo must contain exactly two people</li>
+                    <li>• Only JPG, JPEG, or PNG formats accepted</li>
+                    <li>• Maximum file size: 5MB</li>
+                    <li>• Files are scanned for security before upload</li>
+                    <li>• <strong>Filename format:</strong> firstperson_secondperson.jpg</li>
+                    <li>• <strong>Example:</strong> johnsmith_janedoe.jpg</li>
+                  </ul>
+                </div>
+                
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept=".jpg,.jpeg,.png"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-600 font-medium">
+                      {uploadFile ? uploadFile.name : 'Click to select photo'}
+                    </span>
+                    <span className="text-gray-400 text-xs mt-1">
+                      JPG, JPEG, PNG only (max 5MB)
+                    </span>
+                  </label>
+                </div>
+              </div>
+              
+              {uploadError && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                  {uploadError}
+                </div>
+              )}
+              
+              {uploadMessage && (
+                <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
+                  {uploadMessage}
+                </div>
+              )}
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleUpload}
+                  disabled={!uploadFile || uploadLoading}
+                  className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-all ${
+                    uploadFile && !uploadLoading
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transform hover:scale-105'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {uploadLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Uploading...
+                    </div>
+                  ) : (
+                    'Upload Photo'
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowUploadSection(false);
+                    setUploadFile(null);
+                    setUploadError("");
+                    setUploadMessage("");
+                    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+                    if (fileInput) fileInput.value = '';
+                  }}
+                  className="flex-1 py-2 px-4 rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
