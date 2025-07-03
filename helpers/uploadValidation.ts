@@ -31,7 +31,7 @@ export class AntivirusService {
   constructor() {
     const apiKey = process.env.VIRUSTOTAL_API_KEY;
     if (!apiKey || apiKey === 'your_virustotal_api_key_here') {
-      throw new Error('VirusTotal API key is not configured');
+      throw new Error('VirusTotal API key is required for security scanning. Upload blocked.');
     }
     this.apiKey = apiKey;
   }
@@ -389,7 +389,7 @@ async function validateFileIsSafe(buffer: Buffer): Promise<FileValidationResult>
   } catch (error) {
     return {
       isValid: false,
-      error: error instanceof Error ? `Security check failed: ${error.message}` : 'File security scan failed. Please try again.'
+      error: error instanceof Error ? `Security scan required: ${error.message}` : 'Antivirus scanning failed. Upload blocked for security.'
     };
   }
 }
@@ -522,6 +522,12 @@ export function createAntivirusService(): AntivirusService {
  * Utility function for simple file scanning (backwards compatibility)
  */
 export async function scanFileForViruses(buffer: Buffer): Promise<void> {
+  const apiKey = process.env.VIRUSTOTAL_API_KEY;
+  
+  if (!apiKey || apiKey === 'your_virustotal_api_key_here') {
+    throw new Error('VirusTotal API key is required for security scanning. Upload blocked.');
+  }
+  
   const antivirusService = createAntivirusService();
   await antivirusService.validateFileIsSafe(buffer);
 }
