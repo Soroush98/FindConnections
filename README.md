@@ -88,7 +88,6 @@ Deploy the FindConnections platform by following these steps:
 
 ## Architecture
 
-![alt text](Architecture.png)
 
 The website (frontend and backend) is deployed on the Vercel platform. Vercel connects with a DynamoDB database for user and admin information and authentication. Vercel retrieves connections between two selected individuals from an EC2 instance running a Neo4j database. Each connection includes an image URL stored in this database. Based on this URL, Vercel fetches the images from an Amazon S3 instance to display to the user.
 
