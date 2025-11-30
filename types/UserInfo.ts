@@ -4,10 +4,12 @@ export interface UserInfo {
   FamilyName: string;
   Email: string;
   Password: string;
-  confirmationToken: string;
-  tokenExpiration: number;
+  confirmationToken?: string;
+  tokenExpiration?: number;
   isConfirmed: boolean;
-  uploadCount?: number;
-  lastUploadDate?: string;
+  uploadCount: number;
+  lastUploadDate: string;
   notification_enabled?: number;
+  resetToken?: string;
+  resetTokenExpiration?: number;
 }
