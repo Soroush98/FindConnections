@@ -22,6 +22,7 @@
     "@mui/material": "^6.4.3",
     "@vercel/analytics": "^1.5.0",
     "bcrypt": "^5.1.1",
+    "cookie": "^1.1.1",
     "formidable": "^3.5.2",
     "framer-motion": "^12.4.3",
     "glob": "^13.0.6",
