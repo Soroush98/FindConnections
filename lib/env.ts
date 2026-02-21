@@ -67,7 +67,7 @@ export const jwtConfig = {
 } as const;
 
 export const neo4jConfig = {
-  uri: 'bolt+s://neo4j.findconnections.net:7687',
+  uri: 'neo4j+ssc://neo4j.findconnections.net:7687',
   user: env.NEO4J_USER,
   password: env.NEO4J_PASSWORD,
 } as const;
