@@ -60,12 +60,10 @@ export default function HomePage() {
       setLoadingSuggestions1(true);
       try {
         // always fetch from API
-        const res = await fetch(`/api/general/suggestions?query=`);
+        const res = await fetch(`/api/general/suggestions?query=${encodeURIComponent(name1)}`);
         const data = await res.json();
-        const allNames: string[] = data.suggestions || [];
-        const lowerQuery = name1.toLowerCase();
-        const filtered = allNames.filter(n => n.toLowerCase().includes(lowerQuery));
-        setSuggestions1(filtered.slice(0, 3)); // Limit to 3 suggestions
+        const suggestions: string[] = data.suggestions || [];
+        setSuggestions1(suggestions.slice(0, 3)); // Limit to 3 suggestions
       } catch (error) {
         console.error("Error fetching suggestions:", error);
         setSuggestions1([]);
@@ -88,12 +86,10 @@ export default function HomePage() {
       setLoadingSuggestions2(true);
       try {
         //always fetch from API
-        const res = await fetch(`/api/general/suggestions?query=`);
+        const res = await fetch(`/api/general/suggestions?query=${encodeURIComponent(name2)}`);
         const data = await res.json();
-        const allNames: string[] = data.suggestions || [];
-        const lowerQuery = name2.toLowerCase();
-        const filtered = allNames.filter(n => n.toLowerCase().includes(lowerQuery));
-        setSuggestions2(filtered.slice(0, 3)); // Limit to 3 suggestions
+        const suggestions: string[] = data.suggestions || [];
+        setSuggestions2(suggestions.slice(0, 3)); // Limit to 3 suggestions
       } catch (error) {
         console.error("Error fetching suggestions:", error);
         setSuggestions2([]);
