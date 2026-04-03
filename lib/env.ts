@@ -16,6 +16,7 @@ const envSchema = z.object({
   SECRET_KEY: z.string().min(32, 'SECRET_KEY must be at least 32 characters'),
 
   // Neo4j Configuration
+  NEO4J_URI: z.string().url('NEO4J_URI must be a valid URI').optional(),
   NEO4J_USER: z.string().min(1, 'NEO4J_USER is required'),
   NEO4J_PASSWORD: z.string().min(1, 'NEO4J_PASSWORD is required'),
 
@@ -67,7 +68,7 @@ export const jwtConfig = {
 } as const;
 
 export const neo4jConfig = {
-  uri: 'neo4j+ssc://neo4j.findconnections.net:7687',
+  uri: env.NEO4J_URI || 'neo4j+ssc://neo4j.findconnections.net:7687',
   user: env.NEO4J_USER,
   password: env.NEO4J_PASSWORD,
 } as const;
