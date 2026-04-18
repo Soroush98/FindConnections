@@ -1,6 +1,8 @@
 // next.config.ts
 import { NextConfig } from 'next';
 
+const adminSlug = process.env.ADMIN_SLUG;
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -10,6 +12,16 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+  },
+  async rewrites() {
+    if (!adminSlug) return [];
+    return [
+      { source: `/${adminSlug}`,                destination: '/admin' },
+      { source: `/${adminSlug}/:path*`,         destination: '/admin/:path*' },
+      { source: `/${adminSlug}-upload`,         destination: '/admin-upload' },
+      { source: `/${adminSlug}-upload/:path*`,  destination: '/admin-upload/:path*' },
+      { source: `/api/${adminSlug}/login`,      destination: '/api/admin/admin-login' },
+    ];
   },
 };
 

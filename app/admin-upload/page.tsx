@@ -16,23 +16,24 @@ export default function AdminUploadPage() {
   const [deleteNodeMessage, setDeleteNodeMessage] = useState("");
   const [nodeFullName, setNodeFullName] = useState("");
 
+  const getAdminLoginPath = () => {
+    const first = window.location.pathname.replace(/^\/+|\/+$/g, "").split("/")[0];
+    return "/" + first.replace(/-upload$/, "");
+  };
+
   useEffect(() => {
     const loadUserInfo = async () => {
       try {
         setIsLoading(true);
-        
-        // Verify admin session using HTTP-only cookie
-        const res = await fetch("/api/admin/verify-session", {
-          method: "GET"
-        });
+
+        const res = await fetch("/api/admin/verify-session", { method: "GET" });
 
         if (!res.ok) {
-          router.push("/admin");
+          router.push(getAdminLoginPath());
           return;
         }
-        
       } catch {
-        router.push("/admin");
+        router.push(getAdminLoginPath());
       } finally {
         setIsLoading(false);
       }
@@ -159,14 +160,13 @@ export default function AdminUploadPage() {
   const handleNameChange = createNameChangeHandler;
 
   const handleLogout = async () => {
+    const backToLogin = getAdminLoginPath();
     try {
-      await fetch("/api/admin/logout", {
-        method: "POST",
-      });
-      router.push("/admin");
+      await fetch("/api/admin/logout", { method: "POST" });
+      router.push(backToLogin);
     } catch (error) {
       console.error('Error logging out:', error);
-      router.push("/admin");
+      router.push(backToLogin);
     }
   };
 

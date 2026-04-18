@@ -12,14 +12,15 @@ export default function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/admin/admin-login", {
+      const slug = window.location.pathname.replace(/^\/+|\/+$/g, "").split("/")[0];
+      const res = await fetch(`/api/${slug}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       if (res.ok) {
-        router.push("/admin-upload");
+        router.push(`/${slug}-upload`);
         return;
       }
 
