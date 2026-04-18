@@ -1,18 +1,32 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Head from 'next/head';
 
 export default function AdminPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      const res = await fetch("/api/admin/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-      const data = "Invalid email or password";
-      setMessage(data || "Login failed. Please try again.");
-      
+      if (res.ok) {
+        router.push("/admin-upload");
+        return;
+      }
+
+      setMessage("Invalid email or password");
+    } catch {
+      setMessage("Login failed. Please try again.");
+    }
   };
 
   return (

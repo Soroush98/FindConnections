@@ -3,24 +3,28 @@ import { adminService } from '@/lib/services';
 import { withErrorHandler, AppError } from '@/lib/errors';
 
 async function handler(req: NextRequest): Promise<NextResponse> {
-  const { searchParams } = new URL(req.url);
-  const email = searchParams.get('email');
-  const password = searchParams.get('password');
+  let body: { email?: unknown; password?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    throw AppError.validation('Invalid JSON body');
+  }
 
-  if (!email || !password) {
+  const { email, password } = body;
+
+  if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
     throw AppError.missingFields(['email', 'password']);
   }
 
   const token = await adminService.login(email, password);
 
-  // Set HTTP-only secure cookie
   const response = NextResponse.json({ message: 'Login successful' }, { status: 200 });
   response.cookies.set({
     name: 'admin-token',
     value: token,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 60 * 60 * 8, // 8 hours in seconds
+    maxAge: 60 * 60 * 8,
     path: '/',
     sameSite: 'strict',
   });
@@ -28,4 +32,4 @@ async function handler(req: NextRequest): Promise<NextResponse> {
   return response;
 }
 
-export const GET = withErrorHandler(handler);
+export const POST = withErrorHandler(handler);

@@ -23,22 +23,14 @@ export const isValidEmail = (email: string): boolean => {
 };
 
 /**
- * Updates a user's upload count
- * @param userId User ID
- * @param uploadCount New upload count
- * @param lastUploadDate Date of last upload
- * @returns Promise resolving when the API call completes
+ * Asks the server to refresh the authenticated user's daily upload quota.
+ * The server derives the new count and date — the client cannot set them.
  */
-export const updateUserUploadCount = async (
-  userId: string, 
-  uploadCount: number, 
-  lastUploadDate: string
-): Promise<Response> => {
+export const refreshDailyUploadCount = async (): Promise<Response> => {
   return fetch("/api/users/update-upload-count", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ uploadCount, lastUploadDate }),
   });
 };

@@ -6,6 +6,8 @@ import jwt from 'jsonwebtoken';
 import { key } from '@/config';
 import { cookies } from 'next/headers';
 
+const DAILY_UPLOAD_LIMIT = 10;
+
 const ddbClient = new DynamoDBClient({
   region: awsConfig.region,
   credentials: {
@@ -16,33 +18,31 @@ const ddbClient = new DynamoDBClient({
 const dynamoDb = DynamoDBDocumentClient.from(ddbClient);
 const SECRET_KEY = key.SECRET_KEY;
 
-async function updateUserUploadCount(userId: string, uploadCount: number, lastUploadDate: string) {
+async function resetUserUploadCountIfNewDay(userId: string, today: string) {
   await dynamoDb.send(new UpdateCommand({
-    TableName: "FL_Users",
+    TableName: 'FL_Users',
     Key: { Id: userId },
-    UpdateExpression: 'set uploadCount = :uploadCount, lastUploadDate = :lastUploadDate',
+    UpdateExpression: 'set uploadCount = :limit, lastUploadDate = :today',
+    ConditionExpression: 'attribute_not_exists(lastUploadDate) OR lastUploadDate <> :today',
     ExpressionAttributeValues: {
-      ':uploadCount': uploadCount,
-      ':lastUploadDate': lastUploadDate,
+      ':limit': DAILY_UPLOAD_LIMIT,
+      ':today': today,
     },
   }));
 }
 
 export async function POST(req: NextRequest) {
-  if (req.method !== 'POST') {
-    return NextResponse.json({ message: 'Method not allowed' }, { status: 405 });
-  }
-
   const cookieStore = await cookies();
   const token = cookieStore.get('auth-token')?.value;
-  
+
   if (!token) {
     return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
   }
-  let userId;
+
+  let userId: string;
   try {
-    const decoded = jwt.verify(token, SECRET_KEY) as { email: string, id: string, role: string };
-    if (decoded.role !== 'user') { 
+    const decoded = jwt.verify(token, SECRET_KEY) as { email: string; id: string; role: string };
+    if (decoded.role !== 'user') {
       return NextResponse.json({ message: 'Not authorized' }, { status: 403 });
     }
     userId = decoded.id;
@@ -50,17 +50,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
   }
 
-  const { uploadCount, lastUploadDate } = await req.json();
-
-  if ( uploadCount === undefined || !lastUploadDate) {
-    return NextResponse.json({ message: 'Invalid request' }, { status: 400 });
-  }
+  const today = new Date().toISOString().split('T')[0];
 
   try {
-    await updateUserUploadCount(userId, uploadCount, lastUploadDate);
-    return NextResponse.json({ message: 'Upload count updated successfully' }, { status: 200 });
-  } catch (error) {
-    console.error('Error updating upload count:', error);
+    await resetUserUploadCountIfNewDay(userId, today);
+    return NextResponse.json(
+      { message: 'Upload count refreshed', uploadCount: DAILY_UPLOAD_LIMIT, lastUploadDate: today },
+      { status: 200 }
+    );
+  } catch (error: unknown) {
+    if ((error as { name?: string })?.name === 'ConditionalCheckFailedException') {
+      return NextResponse.json({ message: 'No reset needed' }, { status: 200 });
+    }
+    console.error('Error refreshing upload count:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

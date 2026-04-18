@@ -8,7 +8,7 @@ import { useTheme, useMediaQuery } from "@mui/material";
 // Import helper functions
 import { validateImageFile } from "@/helpers/fileValidation";
 import { createNameChangeHandler } from "@/helpers/nameValidation";
-import { updateUserUploadCount } from "@/helpers/userHelpers";
+import { refreshDailyUploadCount } from "@/helpers/userHelpers";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -58,7 +58,8 @@ export default function ProfilePage() {
         const today = new Date().toISOString().split("T")[0];
         if (data.lastUploadDate !== today) {
           data.uploadCount = 10;
-          await updateUserUploadCount(data.Id, 10, today);
+          data.lastUploadDate = today;
+          await refreshDailyUploadCount();
         }
 
         setUserInfo(data);
