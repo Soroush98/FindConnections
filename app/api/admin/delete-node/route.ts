@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminService } from '@/lib/services';
-import { getNeo4jSession, s3Helpers } from '@/lib/db';
+import { getNeo4jSession } from '@/lib/db';
+import { storageHelpers } from '@/lib/db/storage';
 import { withErrorHandler, AppError } from '@/lib/errors';
 
 async function handler(req: NextRequest): Promise<NextResponse> {
@@ -57,14 +58,14 @@ async function handler(req: NextRequest): Promise<NextResponse> {
     await session.close();
   }
 
-  // Delete all associated images from S3
+  // Delete all associated images from Supabase Storage
   for (const imageUrl of imageUrls) {
+    const key = storageHelpers.keyFromPublicUrl(imageUrl);
+    if (!key) continue;
     try {
-      const urlParts = new URL(imageUrl);
-      const key = urlParts.pathname.substring(1); // Remove leading slash
-      await s3Helpers.deleteObject(key);
+      await storageHelpers.remove(key);
     } catch (error) {
-      console.error(`Error deleting S3 object for URL ${imageUrl}:`, error);
+      console.error(`Error deleting Storage object for URL ${imageUrl}:`, error);
       // Continue with next image even if one fails
     }
   }

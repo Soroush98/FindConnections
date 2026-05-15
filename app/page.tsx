@@ -5,8 +5,6 @@ import { motion } from "framer-motion";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDonate } from '@fortawesome/free-solid-svg-icons';
 import PersonSelector from "../components/PersonSelector"
-import LoginForm from '../components/LoginForm';
-import RegisterForm from '../components/RegisterForm';
 
 export default function HomePage() {
   const [name1, setName1] = useState("");
@@ -20,8 +18,6 @@ export default function HomePage() {
   const [connectionError, setConnectionError] = useState("");
   const [hasSelectedSuggestion1, setHasSelectedSuggestion1] = useState(false);
   const [hasSelectedSuggestion2, setHasSelectedSuggestion2] = useState(false);
-  const [showMembershipModal, setShowMembershipModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const router = useRouter();
 
@@ -54,7 +50,7 @@ export default function HomePage() {
         setLoadingSuggestions1(false);
         return;
       }
-      
+
       setLoadingSuggestions1(true);
       try {
         // always fetch from API
@@ -80,7 +76,7 @@ export default function HomePage() {
         setLoadingSuggestions2(false);
         return;
       }
-      
+
       setLoadingSuggestions2(true);
       try {
         //always fetch from API
@@ -111,7 +107,7 @@ export default function HomePage() {
       return;
     }
     setConnectionError("");
-    
+
     // Navigate to connections page with query parameters
     router.push(`/connections?name1=${encodeURIComponent(name1.trim())}&name2=${encodeURIComponent(name2.trim())}`);
   };
@@ -127,20 +123,11 @@ export default function HomePage() {
               >
               How It Works
               </a>
-            <button
-              onClick={() => {
-                setActiveTab("login");
-                setShowMembershipModal(true);
-              }}
-              className="bg-gradient-to-r from-pink-500 to-fuchsia-700 text-white px-5 py-2 rounded-full font-bold transform hover:scale-105 transition-transform"
-            >
-              Membership
-            </button>
                <button
             onClick={() => router.push("/donate")}
             className="bg-yellow-400 text-gray-800  px-4 py-2 rounded-full font-bold inline-flex items-center hover:bg-yellow-300 transform hover:scale-105 transition-transform ml-[2px] fas fa-donate"
-          > 
-            <FontAwesomeIcon className= "mr-1" icon={faDonate} /> 
+          >
+            <FontAwesomeIcon className= "mr-1" icon={faDonate} />
             Donate
           </button>
         </div>
@@ -168,7 +155,7 @@ export default function HomePage() {
                 rotateClass1="card-rotate-negative3"
                 rotateClass2="card-rotate-negative6"
               />
-              
+
               {/* Chain Icon - Centered between PersonSelectors */}
               <div className="flex flex-col items-center justify-center">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
@@ -194,7 +181,7 @@ export default function HomePage() {
                   </svg>
                 </div>
               </div>
-              
+
               <PersonSelector
                 picUrl={mainPics[1]}
                 inputValue={name2}
@@ -224,52 +211,13 @@ export default function HomePage() {
             )}
           </motion.div>
         )}
-        
-        {showMembershipModal && (
-          <div className="text-black fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-8 rounded shadow-md max-w-md w-full">
-              <div className="flex justify-center mb-4">
-                <button
-                  onClick={() => setActiveTab("login")}
-                  className={`mr-2 p-2 ${activeTab === "login" ? "border-b-2 border-blue-500" : ""}`}
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => setActiveTab("register")}
-                  className={`ml-2 p-2 ${activeTab === "register" ? "border-b-2 border-blue-500" : ""}`}
-                >
-                  Register
-                </button>
-              </div>
-              {activeTab === "login" && (
-                <>
-                  <h1 className="text-2xl font-bold mb-4">Login</h1>
-                  <LoginForm />
-                </>
-              )}
-              {activeTab === "register" && (
-                <>
-                  <h1 className="text-2xl font-bold mb-4">Register</h1>
-                  <RegisterForm />
-                </>
-              )}
-              <button
-                onClick={() => setShowMembershipModal(false)}
-                className="mt-4 text-sm text-gray-600 hover:underline block mx-auto"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
         {showHowItWorks && (
           <div className="text-black fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-8 rounded max-w-md w-full">
               <h2 className="text-xl font-bold mb-4">How It Works</h2>
                 <p className="mb-4 text-justify">
-                Our platform leverages the idea of <a href="https://en.wikipedia.org/wiki/Six_degrees_of_separation" target="_blank" className="text-blue-500 underline">six degrees of separation</a>. In our case, 
-                a connection between two people means they appear together in the same 
+                Our platform leverages the idea of <a href="https://en.wikipedia.org/wiki/Six_degrees_of_separation" target="_blank" className="text-blue-500 underline">six degrees of separation</a>. In our case,
+                a connection between two people means they appear together in the same
                 picture, either directly or through a short chain of others who share photos.
                 </p>
               <button
@@ -281,7 +229,7 @@ export default function HomePage() {
             </div>
           </div>
         )}
-        
+
       </div>
     </>
   );

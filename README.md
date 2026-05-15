@@ -1,140 +1,128 @@
 # FindConnections
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+A [Next.js](https://nextjs.org) app that lets anyone discover connections between
+notable individuals by finding instances where they appear together in a photo —
+either directly or through a short chain of mutual photos. Inspired by
+[six degrees of separation](https://en.wikipedia.org/wiki/Six_degrees_of_separation).
 
-## Project Idea
-FindConnections enables users to discover connections between notable individuals by identifying instances where they have been photographed together, either directly or through a short chain of others who share photos. This feature offers a unique perspective on the interconnectedness of public figures. Our platform is inspired by the concept of [six degrees of separation](https://en.wikipedia.org/wiki/Six_degrees_of_separation).
-
-Here is how the famous comedy actor Steve Carell is connected to Travis Scott, a rapper. Steve Carell appeared in a picture with Timothée Chalamet. Timothée Chalamet appeared in a picture with Kylie Jenner, and finally, Kylie Jenner has a picture with Travis Scott. It's funny to see how people from different worlds can be connected with just a few connections!
+Example: Steve Carell was photographed with Timothée Chalamet, Timothée Chalamet
+with Kylie Jenner, and Kylie Jenner with Travis Scott. Four people from
+different worlds, three photo hops apart.
 
 <img src="Example.png" alt="Example" width="400"/>
 
-### User Actions
-1. **Unregistered Users**:
-    - Anyone can enter two people's full names on the first page and click "Find Connections" to see their corresponding connection.
+## Usage
 
-2. **Registered Users**:
-    - **User Registration**: Users register on the platform by providing their basic information.
-    - **User Profile**: After logging in, users can access their profile page where they can view and update their personal information.
-
-New images are added to the dataset by administrators only, either through
-the existing admin upload flow or through the automated celebrity-pair
-detection pipeline described below.
+- **Anyone** can visit the homepage, type two people's names, and click
+  **Find Connections** to see the shortest photo-chain between them.
+- **Admins** maintain the underlying graph — adding photos manually through
+  the admin upload UI, or driving the automated pair-ingestion pipeline
+  described below. There is no user/membership concept; the public site is
+  read-only.
 
 ## Website
 
-Visit our website at [findconnections.net](https://findconnections.net).
-
-## Deployment
-
-Deploy the FindConnections platform by following these steps:
-
-1. **Clone the repository**:
-    ```sh
-    git clone https://github.com/Soroush98/FindConnections.git
-    cd FindConnections
-    ```
-
-2. **Install dependencies**:
-    ```sh
-    npm install
-    ```
-
-3. **Configure Environment Variables**:
-    Create a `.env` file in the root directory with the following variables:
-    ```env
-    # AWS Configuration
-    AWS_ACCESS_KEY_ID=your_aws_access_key
-    AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-    AWS_REGION=your_aws_region
-    AWS_BUCKET_NAME=your_main_bucket_name
-
-    # Security & Authentication
-    SECRET_KEY=your_jwt_secret_key
-
-    # Database Configuration
-    NEO4J_USER=your_neo4j_username
-    NEO4J_PASSWORD=your_neo4j_password
-    
-    # Email Configuration
-    EMAIL_AUTH_CLIENT_ID=your_google_oauth_client_id
-    EMAIL_AUTH_CLIENT_SECRET=your_google_oauth_client_secret
-    EMAIL_AUTH_REFRESH_TOKEN=your_google_oauth_refresh_token
-    
-    # Analytics
-    NEXT_PUBLIC_GA_ID=your_google_analytics_id
-    ```
-
-4. **Run the application**:
-
-    Run the development server:
-
-    ```bash
-    npm run dev
-    # or
-    yarn dev
-    # or
-    pnpm dev
-    # or
-    bun dev
-    ```
-
-    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-    You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-5. **Access the application**:
-    Open your web browser and navigate to `http://localhost:3000`.
+[findconnections.net](https://findconnections.net)
 
 ## Architecture
 
+| Layer | Stack |
+|---|---|
+| Frontend + API routes | Next.js (App Router) on Vercel |
+| Graph (people + `PHOTOGRAPHED_WITH` edges) | Neo4j on an EC2 instance |
+| Image storage | Supabase Storage (`connection-images` bucket, public read) |
+| Admin auth (bcrypt + custom JWT) | Supabase Postgres (`public.admins` table) |
+| Celebrity face recognition | AWS Rekognition `RecognizeCelebrities` |
+| Image search source | Serper (Google results as JSON) |
 
-The website (frontend and backend) is deployed on the Vercel platform. Vercel connects with a DynamoDB database for user and admin information and authentication. Vercel retrieves connections between two selected individuals from an EC2 instance running a Neo4j database. Each connection includes an image URL stored in this database. Based on this URL, Vercel fetches the images from an Amazon S3 instance to display to the user.
+Connection edges in Neo4j store the absolute Supabase Storage URL of the
+photo. The bucket is public, so reads need no presigning.
 
-### Extended Architecture
+## Automated celebrity-pair ingestion
 
-![alt text](ExtendedArchitecture.png)
+Admins can fire-and-forget a pair name into `POST /api/admin/ingest-pair` and
+the pipeline does the rest:
 
-An additional Lambda-based pipeline has been integrated to allow admin users to automatically populate the dataset with new celebrity pair images. When an admin submits a webpage URL, an API Gateway forwards the request to a Lambda function that extracts image URLs and saves them. A second Lambda function is triggered via S3 to analyze the images using AWS Rekognition. If an image contains exactly two celebrities, it is saved back to the S3 bucket, expanding the dataset automatically.
+1. Search Serper for image results matching `"<personA>" "<personB>"`.
+2. Download each candidate, validate MIME / magic-number / size.
+3. Run AWS Rekognition `RecognizeCelebrities` on the bytes.
+4. Accept the first image where both expected names are detected with
+   ≥95% match confidence.
+5. Upload to Supabase Storage and create the `PHOTOGRAPHED_WITH` edge in
+   Neo4j.
 
-## Security Features
-
-FindConnections implements several security features to ensure the safety and privacy of its users:
-
-1. **Authentication and Authorization**:
-    - Role-based access control to restrict access to certain features based on user roles.
-    - The JWT is stored as an HTTP-only cookie to prevent client-side access and reduce the risk of XSS attacks.
-
-2. **Data Encryption**:
-    - Passwords are hashed using bcrypt to ensure they are stored securely.
-
-3. **Input Validation**:
-    - Comprehensive input validation to prevent common security vulnerabilities such as SQL injection and cross-site scripting (XSS).
-
-4. **Secure Communication**:
-    - All communication between the client and server is encrypted using HTTPS to protect data in transit.
-
-5. **Secret Key Management**:
-    - A secret key is used for signing JWT tokens and other cryptographic operations. This is kept secure and not hard-coded in the source code.
-
-6. **Admin Page Security**:
-    - The real admin page URL is not published in the source code to prevent unauthorized access. A fake admin page is used as a decoy to further enhance security.
-
-7. **IP Lockouts**:
-    - If an IP address attempts multiple failed logins within a short timeframe, it will be temporarily banned to prevent brute-force attacks.
-
-## 🔄 Automated Celebrity Pair Detection and Addition (Added by @Soroush-aali-bagi)
-
-To enhance the dataset and streamline the process of adding new celebrity connections, an administrative feature has been introduced. This functionality allows administrators to input a URL pointing to a webpage containing celebrity images.​
-
-Upon submission, the system performs the following steps:
-1. **Image Extraction:** The system retrieves up to 50 images from the provided webpage.
-2. **Celebrity Recognition:** Each image is analyzed using AWS Rekognition's RecognizeCelebrities API to detect and identify celebrities present in the images.
-3. **Filtering Criteria:** Images that feature exactly two recognized celebrities are selected for inclusion.
-4. **Storage:** The qualifying images are stored in an Amazon S3 bucket, effectively expanding the dataset with new, relevant connections.
-
-This automated approach reduces the need for manual data entry, ensuring a more efficient and scalable method for maintaining and growing the celebrity connections database.
+Source files: [lib/integrations/serper.ts](lib/integrations/serper.ts),
+[lib/integrations/rekognition.ts](lib/integrations/rekognition.ts),
+[lib/services/ingestionService.ts](lib/services/ingestionService.ts),
+[app/api/admin/ingest-pair/route.ts](app/api/admin/ingest-pair/route.ts).
 
 ## Development
 
-If you want to contribute to the project frontend or backend, please contact me at soroosh.esmaeilian@gmail.com.
+### 1. Clone + install
+
+```sh
+git clone https://github.com/Soroush98/FindConnections.git
+cd FindConnections
+npm install
+```
+
+### 2. Configure `.env`
+
+```env
+# AWS — only used for Rekognition celebrity detection
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-2
+
+# JWT secret for admin session cookies
+SECRET_KEY=<at-least-32-chars>
+
+# Neo4j
+NEO4J_URI=bolt+ssc://neo4j.findconnections.net:7687
+NEO4J_USER=...
+NEO4J_PASSWORD=...
+
+# Supabase (admin auth + image storage)
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...      # server-only
+
+# Serper API for automated image search
+SERPER_API_KEY=...
+
+# Admin URL obfuscation slug (rewrites /<slug> -> /admin)
+ADMIN_SLUG=<random-string>
+
+# Analytics
+NEXT_PUBLIC_GA_ID=...
+```
+
+### 3. Create the first admin
+
+```sh
+npm run seed:admin -- you@example.com 'YourStrongPassword!'
+```
+
+### 4. Run
+
+```sh
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The admin login page is
+at `http://localhost:3000/<ADMIN_SLUG>`.
+
+## Security notes
+
+- **Admin URL obfuscation**: `/admin` and `/api/admin/admin-login` return 404
+  unless reached through the secret slug rewrite. See
+  [next.config.ts](next.config.ts) and [middleware.ts](middleware.ts).
+- **Admin passwords**: bcrypt-hashed, stored only in Supabase.
+- **JWT for admin sessions**: HS256, signed with `SECRET_KEY`, set as an
+  `HttpOnly`, `SameSite=strict` cookie.
+- **Service-role Supabase key** is server-only; never imported from a client
+  component.
+
+## Contributing
+
+Reach out at soroosh.esmaeilian@gmail.com.

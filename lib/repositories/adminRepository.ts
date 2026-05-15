@@ -1,7 +1,6 @@
-import { ScanCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
-import { dynamoDb } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/db';
 
-const TABLE_NAME = 'FL_Admin';
+const TABLE_NAME = 'admins';
 
 export interface AdminInfo {
   Id: string;
@@ -9,37 +8,49 @@ export interface AdminInfo {
   Password: string;
 }
 
+interface AdminRow {
+  id: string;
+  email: string;
+  password: string | null;
+}
+
+function toAdminInfo(row: AdminRow | null | undefined): AdminInfo | null {
+  if (!row || !row.password) return null;
+  return { Id: row.id, Email: row.email, Password: row.password };
+}
+
 /**
- * Admin Repository - handles all admin-related database operations
+ * Admin Repository — backed by Supabase Postgres (public.admins).
+ * Service-role client; bypasses RLS.
  */
 export class AdminRepository {
   /**
-   * Find an admin by email
+   * Find an admin by email (case-insensitive — column is citext).
    */
   async findByEmail(email: string): Promise<AdminInfo | null> {
-    const command = new ScanCommand({
-      TableName: TABLE_NAME,
-      FilterExpression: 'Email = :email',
-      ExpressionAttributeValues: { ':email': email },
-    });
+    const { data, error } = await supabaseAdmin
+      .from(TABLE_NAME)
+      .select('id, email, password')
+      .eq('email', email)
+      .maybeSingle();
 
-    const result = await dynamoDb.send(command);
-    return (result.Items?.[0] as AdminInfo) || null;
+    if (error) throw new Error(`adminRepository.findByEmail: ${error.message}`);
+    return toAdminInfo(data);
   }
 
   /**
-   * Find an admin by ID
+   * Find an admin by ID.
    */
   async findById(id: string): Promise<AdminInfo | null> {
-    const command = new GetCommand({
-      TableName: TABLE_NAME,
-      Key: { Id: id },
-    });
+    const { data, error } = await supabaseAdmin
+      .from(TABLE_NAME)
+      .select('id, email, password')
+      .eq('id', id)
+      .maybeSingle();
 
-    const result = await dynamoDb.send(command);
-    return result.Item as AdminInfo | null;
+    if (error) throw new Error(`adminRepository.findById: ${error.message}`);
+    return toAdminInfo(data);
   }
 }
 
-// Export singleton instance
 export const adminRepository = new AdminRepository();

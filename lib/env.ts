@@ -5,13 +5,13 @@ import { z } from 'zod';
  * This ensures all required environment variables are present and correctly typed
  */
 const envSchema = z.object({
-  // AWS Configuration
+  // AWS Configuration — only Rekognition uses AWS now (celebrity recognition in the
+  // Serper ingestion pipeline). DynamoDB and S3 have both been replaced by Supabase.
   AWS_ACCESS_KEY_ID: z.string().min(1, 'AWS_ACCESS_KEY_ID is required'),
   AWS_SECRET_ACCESS_KEY: z.string().min(1, 'AWS_SECRET_ACCESS_KEY is required'),
   AWS_REGION: z.string().min(1, 'AWS_REGION is required'),
-  AWS_BUCKET_NAME: z.string().min(1, 'AWS_BUCKET_NAME is required'),
 
-  // JWT Secret
+  // JWT Secret (used for admin + user session cookies)
   SECRET_KEY: z.string().min(32, 'SECRET_KEY must be at least 32 characters'),
 
   // Neo4j Configuration
@@ -19,23 +19,12 @@ const envSchema = z.object({
   NEO4J_USER: z.string().min(1, 'NEO4J_USER is required'),
   NEO4J_PASSWORD: z.string().min(1, 'NEO4J_PASSWORD is required'),
 
-  // Email Configuration (OAuth2)
-  EMAIL_AUTH_CLIENT_ID: z.string().min(1, 'EMAIL_AUTH_CLIENT_ID is required'),
-  EMAIL_AUTH_CLIENT_SECRET: z.string().min(1, 'EMAIL_AUTH_CLIENT_SECRET is required'),
-  EMAIL_AUTH_REFRESH_TOKEN: z.string().min(1, 'EMAIL_AUTH_REFRESH_TOKEN is required'),
+  // Supabase — backs admin auth (admins table) and Storage (connection-images)
+  SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL'),
+  SUPABASE_ANON_KEY: z.string().min(1, 'SUPABASE_ANON_KEY is required'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
 
-  // --- Supabase (Phase 1: present but not yet wired into the app) ---
-  SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL').optional(),
-  SUPABASE_ANON_KEY: z.string().min(1).optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-
-  // --- Cutover feature flags ---
-  // Flip these per area as phases land. Defaults keep the existing AWS stack.
-  DB_PROVIDER:      z.enum(['dynamo', 'supabase']).default('dynamo'),
-  STORAGE_PROVIDER: z.enum(['s3', 'supabase']).default('s3'),
-  AUTH_PROVIDER:    z.enum(['custom-jwt', 'supabase']).default('custom-jwt'),
-
-  // --- Phase 6: Serper (Google-results-as-JSON, pair-photo ingestion source) ---
+  // Serper (Google-results-as-JSON, pair-photo ingestion source)
   SERPER_API_KEY: z.string().min(1).optional(),
 });
 
@@ -69,7 +58,6 @@ export const awsConfig = {
   accessKeyId: env.AWS_ACCESS_KEY_ID,
   secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
   region: env.AWS_REGION,
-  bucketName: env.AWS_BUCKET_NAME,
 } as const;
 
 export const jwtConfig = {
@@ -83,29 +71,11 @@ export const neo4jConfig = {
 } as const;
 
 export const supabaseConfig = {
-  url:             env.SUPABASE_URL,
-  anonKey:         env.SUPABASE_ANON_KEY,
-  serviceRoleKey:  env.SUPABASE_SERVICE_ROLE_KEY,
-} as const;
-
-export const providers = {
-  db:      env.DB_PROVIDER,
-  storage: env.STORAGE_PROVIDER,
-  auth:    env.AUTH_PROVIDER,
+  url:            env.SUPABASE_URL,
+  anonKey:        env.SUPABASE_ANON_KEY,
+  serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
 } as const;
 
 export const serperConfig = {
   apiKey: env.SERPER_API_KEY,
-} as const;
-
-export const emailConfig = {
-  service: 'gmail',
-  auth: {
-    type: 'OAuth2' as const,
-    user: 'findconnections.net@gmail.com',
-    clientId: env.EMAIL_AUTH_CLIENT_ID,
-    clientSecret: env.EMAIL_AUTH_CLIENT_SECRET,
-    refreshToken: env.EMAIL_AUTH_REFRESH_TOKEN,
-  },
-  baseUrl: 'https://findconnections.net',
 } as const;

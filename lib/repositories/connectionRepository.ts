@@ -1,4 +1,4 @@
-import { getNeo4jSession, s3Helpers } from '@/lib/db';
+import { getNeo4jSession } from '@/lib/db';
 
 export interface ConnectionSegment {
   start: string;
@@ -31,37 +31,26 @@ export class ConnectionRepository {
         { name1, name2 }
       );
 
-      const connections = await Promise.all(
-        result.records.map(async (record) => {
-          const path = record.get('path');
-          const segments: ConnectionSegment[] = path.segments.map(
-            (segment: {
-              start: { properties: { name: string } };
-              relationship: { type: string; properties: { imageUrl: string } };
-              end: { properties: { name: string } };
-            }) => ({
-              start: segment.start.properties.name,
-              relationship: segment.relationship.type,
-              end: segment.end.properties.name,
-              imageUrl: segment.relationship.properties.imageUrl,
-            })
-          );
+      const connections: ConnectionPath[] = result.records.map((record) => {
+        const path = record.get('path');
+        const segments: ConnectionSegment[] = path.segments.map(
+          (segment: {
+            start: { properties: { name: string } };
+            relationship: { type: string; properties: { imageUrl: string } };
+            end: { properties: { name: string } };
+          }) => ({
+            start: segment.start.properties.name,
+            relationship: segment.relationship.type,
+            end: segment.end.properties.name,
+            imageUrl: segment.relationship.properties.imageUrl,
+          })
+        );
 
-          const imageUrls = await Promise.all(
-            segments.map(async (segment) => {
-              if (segment.imageUrl) {
-                const fileName = segment.imageUrl.split('/').pop();
-                if (fileName) {
-                  return s3Helpers.getPresignedUrl(fileName);
-                }
-              }
-              return null;
-            })
-          );
+        // connection-images bucket is public, so the stored URL is served as-is.
+        const imageUrls = segments.map((segment) => segment.imageUrl);
 
-          return { segments, imageUrls };
-        })
-      );
+        return { segments, imageUrls };
+      });
 
       return connections;
     } finally {

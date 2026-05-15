@@ -1,9 +1,8 @@
 import { searchImages, SerperImage } from '@/lib/integrations/serper';
 import { recognizeCelebrities, DetectedCelebrity } from '@/lib/integrations/rekognition';
-import { s3Helpers } from '@/lib/db';
+import { storageHelpers } from '@/lib/db/storage';
 import { connectionRepository } from '@/lib/repositories';
 import { suggestionService } from './suggestionService';
-import { awsConfig } from '@/lib/env';
 import { AppError } from '@/lib/errors';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -190,9 +189,9 @@ export class IngestionService {
     const filename = `${personA}_${personB}.${_ext}`;
     const contentType = _ext === 'png' ? 'image/png' : 'image/jpeg';
 
-    await s3Helpers.putObject(filename, _buffer, contentType);
+    await storageHelpers.upload(filename, _buffer, contentType);
+    const imageUrl = storageHelpers.publicUrl(filename);
 
-    const imageUrl = `https://${awsConfig.bucketName}.s3.${awsConfig.region}.amazonaws.com/${filename}`;
     await connectionRepository.createConnection(personA, personB, imageUrl);
     suggestionService.invalidateCache();
     return imageUrl;

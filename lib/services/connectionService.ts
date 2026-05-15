@@ -1,5 +1,5 @@
 import { connectionRepository, ConnectionPath } from '@/lib/repositories';
-import { s3Helpers } from '@/lib/db';
+import { storageHelpers } from '@/lib/db/storage';
 import { AppError } from '@/lib/errors';
 
 /**
@@ -34,15 +34,16 @@ export class ConnectionService {
     // Delete the connection from Neo4j
     await connectionRepository.deleteConnection(firstPerson, secondPerson);
 
-    // Delete the image from S3 if it exists
+    // Delete the image from Supabase Storage if it exists
     if (connection.imageUrl) {
-      try {
-        const urlParts = new URL(connection.imageUrl);
-        const key = urlParts.pathname.substring(1); // Remove leading slash
-        await s3Helpers.deleteObject(key);
-      } catch (error) {
-        console.error('Error deleting S3 object:', error);
-        // Continue even if S3 deletion fails
+      const key = storageHelpers.keyFromPublicUrl(connection.imageUrl);
+      if (key) {
+        try {
+          await storageHelpers.remove(key);
+        } catch (error) {
+          console.error('Error deleting Storage object:', error);
+          // Continue even if Storage deletion fails
+        }
       }
     }
   }

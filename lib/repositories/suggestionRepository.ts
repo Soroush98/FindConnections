@@ -1,72 +1,50 @@
-import { ListObjectsV2Command, s3Client } from '@/lib/db';
-import { awsConfig } from '@/lib/env';
+import { storageHelpers } from '@/lib/db/storage';
 
 /**
- * Suggestion Repository - handles S3 operations for name suggestions
+ * Suggestion Repository — derives the unique celebrity-name set from object
+ * keys in the connection-images Storage bucket. Object names follow the
+ * convention `FirstFullName_SecondFullName.ext`.
  */
 export class SuggestionRepository {
   private cachedNames: string[] = [];
   private cacheTimestamp = 0;
-  private readonly cacheDurationMs = 60000; // 60 seconds
+  private readonly cacheDurationMs = 60_000;
 
-  /**
-   * Fetch all unique names from S3 bucket
-   */
-  async fetchNamesFromS3(): Promise<string[]> {
+  async fetchNamesFromStorage(): Promise<string[]> {
     try {
-      console.log('Fetching names from S3');
-      const command = new ListObjectsV2Command({ Bucket: awsConfig.bucketName });
-      const response = await s3Client.send(command);
-      const keys = response.Contents?.map((obj) => obj.Key) || [];
+      const keys = await storageHelpers.listKeys();
       const namesSet = new Set<string>();
-
-      keys.forEach((key) => {
-        // Expect keys like "Firstfullname_Secondfullname.extension"
-        if (typeof key === 'string') {
-          const baseName = key.split('/').pop() || ''; // if keys include folders
-          const [name1, rest] = baseName.split('_');
-          if (name1) {
-            namesSet.add(name1.trim());
-          }
-          if (rest) {
-            const name2 = rest.split('.')[0]; // remove extension
-            namesSet.add(name2.trim());
-          }
+      for (const key of keys) {
+        const baseName = key.split('/').pop() || '';
+        const [first, rest] = baseName.split('_');
+        if (first) namesSet.add(first.trim());
+        if (rest) {
+          const second = rest.split('.')[0];
+          namesSet.add(second.trim());
         }
-      });
-
+      }
       return Array.from(namesSet);
     } catch (error) {
-      console.error('Error fetching from S3', error);
+      console.error('Error listing Storage objects:', error);
       return [];
     }
   }
 
-  /**
-   * Get all names with caching
-   */
   async getAllNames(): Promise<string[]> {
     const now = Date.now();
-
     if (this.cachedNames.length && now - this.cacheTimestamp < this.cacheDurationMs) {
       return this.cachedNames;
     }
-
-    const names = await this.fetchNamesFromS3();
+    const names = await this.fetchNamesFromStorage();
     this.cachedNames = names;
     this.cacheTimestamp = now;
-
     return names;
   }
 
-  /**
-   * Invalidate the cache (useful after uploads)
-   */
   invalidateCache(): void {
     this.cachedNames = [];
     this.cacheTimestamp = 0;
   }
 }
 
-// Export singleton instance
 export const suggestionRepository = new SuggestionRepository();
