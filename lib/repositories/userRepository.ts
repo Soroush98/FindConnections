@@ -19,12 +19,6 @@ export interface UpdateUserPasswordInput {
   hashedPassword: string;
 }
 
-export interface UpdateUploadCountInput {
-  userId: string;
-  newCount: number;
-  date: string;
-}
-
 /**
  * User Repository - handles all user-related database operations
  */
@@ -127,8 +121,6 @@ export class UserRepository {
         confirmationToken: { S: input.confirmationToken },
         tokenExpiration: { N: input.tokenExpiration.toString() },
         isConfirmed: { BOOL: false },
-        uploadCount: { N: '0' },
-        lastUploadDate: { S: ' ' },
         notification_enabled: { N: '0' },
       },
     });
@@ -193,28 +185,6 @@ export class UserRepository {
     });
 
     await dynamoDb.send(command);
-  }
-
-  /**
-   * Update upload count with conditional check to prevent race conditions
-   */
-  async updateUploadCount(input: UpdateUploadCountInput): Promise<UserInfo | null> {
-    const command = new UpdateCommand({
-      TableName: TABLE_NAME,
-      Key: { Id: input.userId },
-      UpdateExpression: 'SET uploadCount = :newCount, lastUploadDate = :date',
-      ConditionExpression: '(uploadCount > :zero OR :today <> lastUploadDate)',
-      ExpressionAttributeValues: {
-        ':newCount': input.newCount,
-        ':date': input.date,
-        ':zero': 0,
-        ':today': input.date,
-      },
-      ReturnValues: 'ALL_NEW',
-    });
-
-    const result = await dynamoDb.send(command);
-    return result.Attributes as UserInfo | null;
   }
 
   /**

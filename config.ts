@@ -3,7 +3,6 @@ export const awsConfig = {
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
   region: process.env.AWS_REGION as string,
   bucketName: process.env.AWS_BUCKET_NAME as string,
-  tempbucketName: process.env.AWS_TEMP_BUCKET_NAME as string,
 };
 export const key = {
   SECRET_KEY: process.env.SECRET_KEY as string,

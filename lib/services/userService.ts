@@ -25,8 +25,6 @@ export interface UserPublicInfo {
   FamilyName: string;
   Email: string;
   isConfirmed: boolean;
-  uploadCount: number;
-  lastUploadDate: string;
   notification_enabled: number;
 }
 
@@ -139,8 +137,6 @@ export class UserService {
       FamilyName: user.FamilyName,
       Email: user.Email,
       isConfirmed: user.isConfirmed,
-      uploadCount: user.uploadCount,
-      lastUploadDate: user.lastUploadDate,
       notification_enabled: user.notification_enabled || 0,
     };
   }
@@ -236,36 +232,6 @@ export class UserService {
     }
 
     await userRepository.confirmEmail(user.Id);
-  }
-
-  /**
-   * Update user upload count
-   */
-  async updateUploadCount(userId: string, decrement: boolean = true): Promise<UserInfo | null> {
-    const user = await userRepository.findById(userId);
-    if (!user) {
-      throw AppError.notFound('User');
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    let currentCount = user.uploadCount || 0;
-
-    // Reset count if it's a new day
-    if (user.lastUploadDate !== today) {
-      currentCount = 10; // Max daily uploads
-    }
-
-    if (currentCount <= 0) {
-      throw AppError.rateLimited('You have reached your maximum uploads for today. Please try again tomorrow.');
-    }
-
-    const newCount = decrement ? currentCount - 1 : currentCount;
-
-    return userRepository.updateUploadCount({
-      userId,
-      newCount,
-      date: today,
-    });
   }
 
   /**

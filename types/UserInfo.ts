@@ -7,8 +7,6 @@ export interface UserInfo {
   confirmationToken?: string;
   tokenExpiration?: number;
   isConfirmed: boolean;
-  uploadCount: number;
-  lastUploadDate: string;
   notification_enabled?: number;
   resetToken?: string;
   resetTokenExpiration?: number;

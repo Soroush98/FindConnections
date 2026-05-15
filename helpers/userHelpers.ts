@@ -21,16 +21,3 @@ export const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
-
-/**
- * Asks the server to refresh the authenticated user's daily upload quota.
- * The server derives the new count and date — the client cannot set them.
- */
-export const refreshDailyUploadCount = async (): Promise<Response> => {
-  return fetch("/api/users/update-upload-count", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-};

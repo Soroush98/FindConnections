@@ -12,12 +12,14 @@ Here is how the famous comedy actor Steve Carell is connected to Travis Scott, a
 ### User Actions
 1. **Unregistered Users**:
     - Anyone can enter two people's full names on the first page and click "Find Connections" to see their corresponding connection.
-    - **Public Image Upload**: Unregistered users can upload images directly from the main page for analysis. Each IP address is limited to 10 uploads per day.
 
 2. **Registered Users**:
     - **User Registration**: Users register on the platform by providing their basic information.
     - **User Profile**: After logging in, users can access their profile page where they can view and update their personal information.
-    - **Photo Uploads**: Users can upload up to 10 pictures daily according to the upload guidelines. Each upload request will be reviewed by an admin, and if approved, new connections will be added to the website.
+
+New images are added to the dataset by administrators only, either through
+the existing admin upload flow or through the automated celebrity-pair
+detection pipeline described below.
 
 ## Website
 
@@ -46,12 +48,10 @@ Deploy the FindConnections platform by following these steps:
     AWS_SECRET_ACCESS_KEY=your_aws_secret_key
     AWS_REGION=your_aws_region
     AWS_BUCKET_NAME=your_main_bucket_name
-    AWS_TEMP_BUCKET_NAME=your_temp_bucket_name
-    
+
     # Security & Authentication
     SECRET_KEY=your_jwt_secret_key
-    VIRUSTOTAL_API_KEY=your_virustotal_api_key
-    
+
     # Database Configuration
     NEO4J_USER=your_neo4j_username
     NEO4J_PASSWORD=your_neo4j_password
@@ -123,39 +123,7 @@ FindConnections implements several security features to ensure the safety and pr
 7. **IP Lockouts**:
     - If an IP address attempts multiple failed logins within a short timeframe, it will be temporarily banned to prevent brute-force attacks.
 
-8. **🛡️ Advanced File Security & Antivirus Scanning**:
-    - **VirusTotal Integration**: All uploaded files undergo mandatory antivirus scanning using the VirusTotal API before being stored.
-    - **Magic Number Verification**: Files are checked for authentic image signatures to prevent disguised malicious files.
-
-9. **📊 Rate Limiting & Upload Monitoring**:
-    - **Daily Upload Limits**: Each IP address is limited to 10 uploads per day, tracked in DynamoDB.
-    - **IP-based Tracking**: All uploads are logged with IP addresses and timestamps for monitoring and abuse prevention.
-    - **Automatic Reset**: Upload limits reset daily at midnight to ensure fair usage.
-
-## � Public Upload Feature
-
-FindConnections now offers a public upload feature that allows anyone to contribute images for analysis:
-
-### Features:
-- **Accessible to All**: Available directly from the main page without requiring registration
-- **Secure Processing**: All uploads undergo comprehensive security checks including:
-  - Antivirus scanning via VirusTotal API
-  - File type verification (JPG, JPEG, PNG only)
-  - File size validation (maximum 5MB)
-  - Magic number verification for authentic image files
-  - Filename sanitization
-- **Rate Limiting**: Each IP address can upload up to 10 images per day
-- **Temporary Storage**: Images are stored in a temporary S3 bucket for processing
-- **Real-time Feedback**: Users receive immediate feedback on upload status and remaining daily uploads
-
-### Upload Guidelines:
-- **Supported Formats**: JPG, JPEG, PNG
-- **Maximum Size**: 5MB per file
-- **Daily Limit**: 10 uploads per IP address
-- **Security**: All files must pass antivirus scanning
-- **Filename**: Use only letters, numbers, spaces, hyphens, and underscores
-
-## �🔄 Automated Celebrity Pair Detection and Addition (Added by @Soroush-aali-bagi)
+## 🔄 Automated Celebrity Pair Detection and Addition (Added by @Soroush-aali-bagi)
 
 To enhance the dataset and streamline the process of adding new celebrity connections, an administrative feature has been introduced. This functionality allows administrators to input a URL pointing to a webpage containing celebrity images.​
 

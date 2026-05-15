@@ -68,36 +68,6 @@ export class SuggestionService {
   }
 
   /**
-   * Check if a file already exists in temp bucket
-   */
-  async fileExistsInTemp(
-    firstPerson: string,
-    secondPerson: string,
-    fileExtension: string
-  ): Promise<boolean> {
-    return suggestionRepository.checkTempFileExists(firstPerson, secondPerson, fileExtension);
-  }
-
-  /**
-   * Upload a file to temp bucket
-   */
-  async uploadToTemp(
-    firstPerson: string,
-    secondPerson: string,
-    fileExtension: string,
-    buffer: Buffer,
-    contentType: string
-  ): Promise<string> {
-    return suggestionRepository.uploadToTempBucket(
-      firstPerson,
-      secondPerson,
-      fileExtension,
-      buffer,
-      contentType
-    );
-  }
-
-  /**
    * Invalidate the name cache
    */
   invalidateCache(): void {

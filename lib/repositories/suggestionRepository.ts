@@ -1,4 +1,4 @@
-import { s3Helpers, ListObjectsV2Command, s3Client } from '@/lib/db';
+import { ListObjectsV2Command, s3Client } from '@/lib/db';
 import { awsConfig } from '@/lib/env';
 
 /**
@@ -57,52 +57,6 @@ export class SuggestionRepository {
     this.cacheTimestamp = now;
 
     return names;
-  }
-
-  /**
-   * Check if a file exists in the temp bucket with either name combination
-   */
-  async checkTempFileExists(
-    firstPerson: string,
-    secondPerson: string,
-    fileExtension: string
-  ): Promise<boolean> {
-    const key1 = `${firstPerson}_${secondPerson}.${fileExtension}`;
-    const key2 = `${secondPerson}_${firstPerson}.${fileExtension}`;
-
-    const response = await s3Helpers.listObjects('', awsConfig.tempBucketName);
-
-    if (response.Contents) {
-      for (const object of response.Contents) {
-        if (object.Key === key1 || object.Key === key2) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /**
-   * Upload a file to temp bucket
-   */
-  async uploadToTempBucket(
-    firstPerson: string,
-    secondPerson: string,
-    fileExtension: string,
-    buffer: Buffer,
-    contentType: string
-  ): Promise<string> {
-    const key = `${firstPerson}_${secondPerson}.${fileExtension}`;
-    await s3Helpers.putObject(key, buffer, contentType, awsConfig.tempBucketName);
-    return key;
-  }
-
-  /**
-   * Delete a file from S3
-   */
-  async deleteFile(key: string, bucket?: string): Promise<void> {
-    await s3Helpers.deleteObject(key, bucket);
   }
 
   /**
