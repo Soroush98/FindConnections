@@ -35,9 +35,8 @@ const envSchema = z.object({
   STORAGE_PROVIDER: z.enum(['s3', 'supabase']).default('s3'),
   AUTH_PROVIDER:    z.enum(['custom-jwt', 'supabase']).default('custom-jwt'),
 
-  // --- Phase 6: Google Custom Search (pair-photo ingestion) ---
-  GOOGLE_CSE_API_KEY:   z.string().min(1).optional(),
-  GOOGLE_CSE_ENGINE_ID: z.string().min(1).optional(),
+  // --- Phase 6: Serper (Google-results-as-JSON, pair-photo ingestion source) ---
+  SERPER_API_KEY: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -95,9 +94,8 @@ export const providers = {
   auth:    env.AUTH_PROVIDER,
 } as const;
 
-export const googleCseConfig = {
-  apiKey:   env.GOOGLE_CSE_API_KEY,
-  engineId: env.GOOGLE_CSE_ENGINE_ID,
+export const serperConfig = {
+  apiKey: env.SERPER_API_KEY,
 } as const;
 
 export const emailConfig = {
