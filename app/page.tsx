@@ -25,22 +25,25 @@ export default function HomePage() {
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const router = useRouter();
 
-  // Set two random main pictures
+  // Fetch the famous-pics directory and pick two at random
   useEffect(() => {
-    const picList = [
-      "MohammadReza Golzar_Actor.jpg",
-      "Johnny Depp_Actor.jpg",
-      "Brad Pitt_Actor.jpg",
-      "Britt Lower_Actress.jpg",
-      "Margot Robbie_Actress.jpg",
-      "Elahe Hesari_Actress.jpg",
-      "Ebrahim Hamedi_Singer.jpg",
-      "Travis Scott_Singer.jpg",
-      "Taraneh Alidousti_Actress.jpg",
-    ];
-    // Shuffle and pick first two
-    const shuffled = picList.sort(() => 0.5 - Math.random());
-    setMainPics(shuffled.slice(0, 2));
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/general/famous-pics");
+        if (!res.ok) return;
+        const data = await res.json();
+        const picList: string[] = data.pics || [];
+        if (cancelled || picList.length === 0) return;
+        const shuffled = [...picList].sort(() => 0.5 - Math.random());
+        setMainPics(shuffled.slice(0, 2));
+      } catch (err) {
+        console.error("Failed to load famous pics:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
 
