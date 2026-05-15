@@ -1,4 +1,4 @@
-import { suggestionRepository } from '@/lib/repositories';
+import { suggestionRepository, connectionRepository } from '@/lib/repositories';
 
 /**
  * Helper function to compute Levenshtein distance
@@ -39,6 +39,9 @@ function levenshtein(a: string, b: string): number {
  * Suggestion Service - handles name suggestion business logic
  */
 export class SuggestionService {
+  private popularCache: { names: string[]; timestamp: number } | null = null;
+  private readonly popularCacheDurationMs = 5 * 60_000;
+
   /**
    * Get name suggestions based on a query
    */
@@ -68,10 +71,30 @@ export class SuggestionService {
   }
 
   /**
+   * Top-N people by edge degree, cached for 5 minutes.
+   * Used to seed quick-pick chips on the home page.
+   */
+  async getPopularNames(limit: number): Promise<string[]> {
+    const now = Date.now();
+    if (
+      this.popularCache &&
+      this.popularCache.names.length >= limit &&
+      now - this.popularCache.timestamp < this.popularCacheDurationMs
+    ) {
+      return this.popularCache.names.slice(0, limit);
+    }
+
+    const names = await connectionRepository.getTopPeopleByDegree(Math.max(limit, 12));
+    this.popularCache = { names, timestamp: now };
+    return names.slice(0, limit);
+  }
+
+  /**
    * Invalidate the name cache
    */
   invalidateCache(): void {
     suggestionRepository.invalidateCache();
+    this.popularCache = null;
   }
 }
 

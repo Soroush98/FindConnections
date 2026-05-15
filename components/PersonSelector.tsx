@@ -6,6 +6,7 @@ type PersonSelectorProps = {
   onInputChange: (value: string) => void;
   suggestions: string[];
   onSuggestionSelect: (value: string) => void;
+  popularNames?: string[];
   cardClass: string; // e.g. "rounded-lg" vs "rounded-2xl"
   rotateClass1: string; // e.g. "card-rotate-negative3"
   rotateClass2: string; // e.g. "card-rotate-negative6"
@@ -17,10 +18,12 @@ export default function PersonSelector({
   onInputChange,
   suggestions,
   onSuggestionSelect,
+  popularNames = [],
   cardClass,
   rotateClass1,
   rotateClass2,
 }: PersonSelectorProps) {
+  const showChips = inputValue.length === 0 && popularNames.length > 0;
   return (
     <div className="flex flex-col items-center">
       <div className="relative">
@@ -82,6 +85,23 @@ export default function PersonSelector({
             </li>
           ))}
         </ul>
+      )}
+      {showChips && (
+        <div className="mt-3 w-[220px] flex flex-wrap justify-center gap-1.5">
+          <span className="w-full text-center text-[10px] uppercase tracking-wider text-purple-200 mb-0.5">
+            Try one of these
+          </span>
+          {popularNames.map((name) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => onSuggestionSelect(name)}
+              className="px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/30 text-white text-xs transition-colors"
+            >
+              {name}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

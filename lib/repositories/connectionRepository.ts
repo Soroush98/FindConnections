@@ -199,6 +199,29 @@ export class ConnectionRepository {
       await session.close();
     }
   }
+
+  /**
+   * Return the top-N people in the graph by number of incident PHOTOGRAPHED_WITH edges.
+   */
+  async getTopPeopleByDegree(limit: number): Promise<string[]> {
+    const session = getNeo4jSession();
+
+    try {
+      const result = await session.run(
+        `
+        MATCH (p:Person)-[r:PHOTOGRAPHED_WITH]-()
+        RETURN p.name AS name, count(r) AS degree
+        ORDER BY degree DESC
+        LIMIT toInteger($limit)
+        `,
+        { limit: Math.max(1, Math.floor(limit)) }
+      );
+
+      return result.records.map((record) => record.get('name') as string);
+    } finally {
+      await session.close();
+    }
+  }
 }
 
 // Export singleton instance

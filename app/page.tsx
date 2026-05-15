@@ -11,6 +11,7 @@ export default function HomePage() {
   const [name2, setName2] = useState("");
   const [showMainPics] = useState(true);
   const [mainPics, setMainPics] = useState<string[]>([]);
+  const [popularNames, setPopularNames] = useState<string[]>([]);
   const [suggestions1, setSuggestions1] = useState<string[]>([]);
   const [suggestions2, setSuggestions2] = useState<string[]>([]);
   const [, setLoadingSuggestions1] = useState(false);
@@ -35,6 +36,25 @@ export default function HomePage() {
         setMainPics(shuffled.slice(0, 2));
       } catch (err) {
         console.error("Failed to load famous pics:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Fetch top names by connection-count to seed the quick-pick chips
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/general/popular?limit=8");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setPopularNames(data.names || []);
+      } catch (err) {
+        console.error("Failed to load popular names:", err);
       }
     })();
     return () => {
@@ -151,6 +171,7 @@ export default function HomePage() {
                   setSuggestions1([]);
                   setHasSelectedSuggestion1(true);
                 }}
+                popularNames={popularNames.filter((n) => n !== name2)}
                 cardClass="rounded-2xl"
                 rotateClass1="card-rotate-negative3"
                 rotateClass2="card-rotate-negative6"
@@ -195,6 +216,7 @@ export default function HomePage() {
                   setSuggestions2([]);
                   setHasSelectedSuggestion2(true);
                 }}
+                popularNames={popularNames.filter((n) => n !== name1)}
                 cardClass="rounded-2xl"
                 rotateClass1="card-rotate3 rounded-2xl"
                 rotateClass2="card-rotate6 rounded-2xl"
