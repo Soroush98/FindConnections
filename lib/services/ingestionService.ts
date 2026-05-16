@@ -94,7 +94,10 @@ export class IngestionService {
       return { added: false, existing: existing.imageUrl, attempts: [] };
     }
 
-    const query = `"${personA}" "${personB}"`;
+    // Serper's free tier rejects "advanced" query patterns (quoted phrases,
+    // operators). Rekognition gates each candidate by name+confidence anyway,
+    // so plain keywords are accurate enough.
+    const query = `${personA} ${personB}`;
     const candidates = await searchImages(query, maxCandidates);
 
     const attempts: IngestionAttempt[] = [];
