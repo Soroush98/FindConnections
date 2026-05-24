@@ -26,14 +26,7 @@ different worlds, three photo hops apart.
 
 ## Architecture
 
-| Layer | Stack |
-|---|---|
-| Frontend + API routes | Next.js (App Router) on Vercel |
-| Graph (people + `PHOTOGRAPHED_WITH` edges) | Neo4j on an EC2 instance |
-| Image storage | Supabase Storage (`connection-images` bucket, public read) |
-| Admin auth (bcrypt + custom JWT) | Supabase Postgres (`public.admins` table) |
-| Celebrity face recognition | AWS Rekognition `RecognizeCelebrities` |
-| Image search source | Serper (Google results as JSON) |
+<img src="Architecture.png" alt="Architecture" width="800"/>
 
 Connection edges in Neo4j store the absolute Supabase Storage URL of the
 photo. The bucket is public, so reads need no presigning.
@@ -43,7 +36,8 @@ photo. The bucket is public, so reads need no presigning.
 Admins can fire-and-forget a pair name into `POST /api/admin/ingest-pair` and
 the pipeline does the rest:
 
-1. Search Serper for image results matching `"<personA>" "<personB>"`.
+1. Search Serper for image results matching `<personA> <personB>` (plain
+   keywords — Serper's free tier rejects quoted phrases).
 2. Download each candidate, validate MIME / magic-number / size.
 3. Run AWS Rekognition `RecognizeCelebrities` on the bytes.
 4. Accept the first image where both expected names are detected with
