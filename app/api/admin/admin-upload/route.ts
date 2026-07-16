@@ -1,59 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminService, suggestionService } from '@/lib/services';
+import { adminService, connectionService, suggestionService } from '@/lib/services';
 import { storageHelpers } from '@/lib/db/storage';
-import { connectionRepository } from '@/lib/repositories';
 import { withErrorHandler, AppError } from '@/lib/errors';
-
-async function fileExistsInStorage(
-  firstPerson: string,
-  secondPerson: string,
-  fileExtension: string
-): Promise<boolean> {
-  const candidates = new Set([
-    `${firstPerson}_${secondPerson}.${fileExtension}`,
-    `${secondPerson}_${firstPerson}.${fileExtension}`,
-  ]);
-  const keys = await storageHelpers.listKeys();
-  for (const key of keys) {
-    if (candidates.has(key)) return true;
-  }
-  return false;
-}
+import { isValidFullName } from '@/helpers/nameValidation';
+import { validateServerImage } from '@/helpers/serverImageValidation';
 
 async function handler(req: NextRequest): Promise<NextResponse> {
   await adminService.verifySession();
 
   const formData = await req.formData();
-  const firstPersonFullName = formData.get('firstPersonFullName') as string;
-  const secondPersonFullName = formData.get('secondPersonFullName') as string;
-  const file = formData.get('file') as File;
+  const firstPersonFullName = formData.get('firstPersonFullName');
+  const secondPersonFullName = formData.get('secondPersonFullName');
+  const file = formData.get('file');
 
-  if (!firstPersonFullName || !secondPersonFullName || !file) {
+  if (
+    typeof firstPersonFullName !== 'string' ||
+    typeof secondPersonFullName !== 'string' ||
+    !(file instanceof File)
+  ) {
     throw AppError.missingFields(['firstPersonFullName', 'secondPersonFullName', 'file']);
   }
 
-  const nameRegex = /^[a-zA-Z]+\s[a-zA-Z]+$/;
-  if (!nameRegex.test(firstPersonFullName) || !nameRegex.test(secondPersonFullName)) {
+  if (!isValidFullName(firstPersonFullName) || !isValidFullName(secondPersonFullName)) {
     throw AppError.validation("Name format is incorrect. Please use '{name} {familyname}' format.");
   }
 
-  const fileExtension = file.name.split('.').pop();
-  if (!fileExtension) {
-    throw AppError.validation('File must have an extension');
+  // Re-validate the file server-side from raw bytes — the browser check is not
+  // trustworthy and the ingestion path validates the same way.
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const validation = validateServerImage(file.name, file.type, buffer);
+  if (!validation.isValid) {
+    throw AppError.validation(validation.message ?? 'Invalid image file.');
   }
 
-  if (await fileExistsInStorage(firstPersonFullName, secondPersonFullName, fileExtension)) {
+  // Graph is the source of truth for pair uniqueness (undirected, extension-
+  // agnostic — unlike a storage-key scan).
+  if (await connectionService.connectionExists(firstPersonFullName, secondPersonFullName)) {
     throw AppError.alreadyExists('Connection');
   }
 
-  const fileName = `${firstPersonFullName}_${secondPersonFullName}.${fileExtension}`;
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
+  const fileName = `${firstPersonFullName}_${secondPersonFullName}.${validation.extension}`;
   await storageHelpers.upload(fileName, buffer, file.type);
   const imageUrl = storageHelpers.publicUrl(fileName);
 
-  await connectionRepository.createConnection(firstPersonFullName, secondPersonFullName, imageUrl);
+  await connectionService.createConnection(firstPersonFullName, secondPersonFullName, imageUrl);
 
   suggestionService.invalidateCache();
 

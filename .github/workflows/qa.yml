@@ -1,0 +1,44 @@
+# QA gate — entry/exit criteria from QA-STRATEGY.md §4, enforced.
+# Merge requires: lint + typecheck clean, all suites green with coverage
+# thresholds met, and no high/critical dependency vulnerabilities.
+name: QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit / integration / security suites (+ coverage gate)
+        run: npm run test:coverage
+        env:
+          # Suites run fully mocked — these fakes only satisfy env validation.
+          # (Set in tests/setup.ts as well; declared here for clarity.)
+          CI: 'true'
+
+      - name: Dependency audit (fails on high/critical)
+        run: npm audit --audit-level=high
+
+  # The live data-quality suite and k6 load runs are NOT in the merge gate:
+  # they need production credentials and a running server. Run them on demand:
+  #   npm run test:live-data     (read-only invariants vs real stores)
+  #   npm run loadtest:load      (against a local prod build)

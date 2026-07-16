@@ -70,8 +70,9 @@ export class ConnectionRepository {
     try {
       const result = await session.run(
         `
-        MATCH (p1:Person {name: $firstPersonName})-[r:PHOTOGRAPHED_WITH]->(p2:Person {name: $secondPersonName})
+        MATCH (p1:Person {name: $firstPersonName})-[r:PHOTOGRAPHED_WITH]-(p2:Person {name: $secondPersonName})
         RETURN r.imageUrl as imageUrl
+        LIMIT 1
         `,
         {
           firstPersonName: firstPerson,
@@ -100,7 +101,7 @@ export class ConnectionRepository {
     try {
       await session.run(
         `
-        MATCH (p1:Person {name: $firstPersonName})-[r:PHOTOGRAPHED_WITH]->(p2:Person {name: $secondPersonName})
+        MATCH (p1:Person {name: $firstPersonName})-[r:PHOTOGRAPHED_WITH]-(p2:Person {name: $secondPersonName})
         DELETE r
         `,
         {
@@ -161,11 +162,16 @@ export class ConnectionRepository {
     const session = getNeo4jSession();
 
     try {
+      // Undirected MERGE on the relationship makes creation idempotent AND
+      // direction-agnostic: an existing edge in EITHER direction is reused
+      // rather than duplicated (guards the pair-uniqueness invariant even if a
+      // caller skips the exists-check or two writers race).
       await session.run(
         `
         MERGE (p1:Person {name: $firstPerson})
         MERGE (p2:Person {name: $secondPerson})
-        CREATE (p1)-[:PHOTOGRAPHED_WITH {imageUrl: $imageUrl}]->(p2)
+        MERGE (p1)-[r:PHOTOGRAPHED_WITH]-(p2)
+        ON CREATE SET r.imageUrl = $imageUrl
         `,
         {
           firstPerson,

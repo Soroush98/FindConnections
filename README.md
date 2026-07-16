@@ -24,6 +24,23 @@ different worlds, three photo hops apart.
 
 [findconnections.net](https://findconnections.net)
 
+## Quality assurance
+
+Strategy, gates, and SLOs live in [QA-STRATEGY.md](QA-STRATEGY.md);
+requirement↔test mapping in [TRACEABILITY.md](TRACEABILITY.md); known issues
+in [DEFECTS.md](DEFECTS.md).
+
+```sh
+npm test                 # unit + integration + security suites (fully mocked)
+npm run test:coverage    # same, with coverage gates (80% lines / 75% branches)
+npm run test:live-data   # read-only integrity invariants vs the REAL graph/bucket
+npm run loadtest:load    # k6 vs http://localhost:3000 (prod build!) — see loadtest/README.md
+node scripts/smoke.mjs   # post-deploy smoke (BASE_URL=… to target a deployment)
+```
+
+CI (`.github/workflows/qa.yml`) enforces lint + typecheck + suites + coverage
++ `npm audit --audit-level=high` on every PR.
+
 ## Architecture
 
 <img src="Architecture.png" alt="Architecture" width="800"/>

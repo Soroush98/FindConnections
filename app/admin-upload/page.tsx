@@ -246,21 +246,21 @@ function UploadPanel() {
   const [firstPerson, setFirstPerson] = useState("");
   const [secondPerson, setSecondPerson] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [flash, setFlash] = useState<FlashMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Derive the preview URL from the selected file (no state → no cascading
+  // render); the effect only revokes it when it changes or unmounts.
+  const previewUrl = useMemo(
+    () => (selectedFile ? URL.createObjectURL(selectedFile) : null),
+    [selectedFile]
+  );
   useEffect(() => {
-    if (!selectedFile) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(selectedFile);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [selectedFile]);
+    if (!previewUrl) return;
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
@@ -351,7 +351,7 @@ function UploadPanel() {
           onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
           className="hidden"
         />
-        {previewUrl ? (
+        {selectedFile && previewUrl ? (
           <div className="flex flex-col items-center gap-3">
             <Image
               src={previewUrl}
@@ -413,7 +413,8 @@ function IngestPanel() {
   useEffect(() => {
     if (status !== "loading") return;
     startedAtRef.current = Date.now();
-    setElapsedMs(0);
+    // elapsed is reset by the handler that enters "loading"; the interval
+    // callback (an async event, not a synchronous effect body) drives updates.
     const id = setInterval(() => {
       if (startedAtRef.current) setElapsedMs(Date.now() - startedAtRef.current);
     }, 100);
@@ -446,6 +447,7 @@ function IngestPanel() {
       return;
     }
     setStatus("loading");
+    setElapsedMs(0);
     try {
       const res = await fetch("/api/admin/ingest-pair", {
         method: "POST",

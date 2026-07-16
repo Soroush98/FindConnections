@@ -9,7 +9,10 @@ async function handler(req: NextRequest): Promise<NextResponse> {
   await adminService.verifySession();
 
   // Get node details from request
-  const { fullName } = await req.json();
+  const body = await req.json().catch(() => {
+    throw AppError.validation('Invalid JSON body');
+  });
+  const fullName = body?.fullName;
 
   if (!fullName) {
     throw AppError.missingFields(['fullName']);

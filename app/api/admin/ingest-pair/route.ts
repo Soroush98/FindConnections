@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminService, ingestionService } from '@/lib/services';
 import { withErrorHandler, AppError } from '@/lib/errors';
+import { isValidFullName } from '@/helpers/nameValidation';
 
-const NAME_REGEX = /^[a-zA-Z]+\s[a-zA-Z]+$/;
 const DEFAULT_MAX_CANDIDATES = 15;
 const HARD_MAX_CANDIDATES = 30;
 
@@ -17,8 +17,8 @@ async function handler(req: NextRequest): Promise<NextResponse> {
     throw AppError.missingFields(['personA', 'personB']);
   }
 
-  if (!NAME_REGEX.test(body.personA) || !NAME_REGEX.test(body.personB)) {
-    throw AppError.validation("Names must be in '{first} {last}' format using letters only");
+  if (!isValidFullName(body.personA) || !isValidFullName(body.personB)) {
+    throw AppError.validation("Names must be in '{first} {last}' format");
   }
 
   const requested = typeof body.maxCandidates === 'number' ? body.maxCandidates : DEFAULT_MAX_CANDIDATES;
